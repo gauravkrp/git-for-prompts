@@ -34,12 +34,28 @@ jobs:
           npm run build
           npm link
 
-      - name: Run prompt tests
+      - name: Initialize prompt repository and run tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
-          prompt test --verbose
+          # Initialize prompts repository
+          prompt init
+
+          # Copy example prompts to test
+          cp examples/*.yaml .prompts/prompts/
+
+          # List available prompts
+          prompt list
+
+          # Run tests (will skip if no API key is set)
+          if [ -n "$OPENAI_API_KEY" ]; then
+            prompt test --verbose
+          else
+            echo "No API key set, skipping live tests"
+            # Just validate prompt structure
+            prompt list --verbose
+          fi
 
       - name: Generate diff report
         if: github.event_name == 'pull_request'
@@ -105,7 +121,19 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
           echo "Running regression tests for all prompts..."
-          prompt test --verbose
+
+          # Initialize prompts repository
+          prompt init
+
+          # Copy example prompts
+          cp examples/*.yaml .prompts/prompts/
+
+          # Run tests if API key exists
+          if [ -n "$OPENAI_API_KEY" ]; then
+            prompt test --verbose
+          else
+            echo "No API key set, skipping regression tests"
+          fi
 
           # Save test results as artifacts
           prompt list > prompt-inventory.txt

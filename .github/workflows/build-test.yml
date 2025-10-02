@@ -1,0 +1,75 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Test CLI commands
+        run: |
+          # Link the CLI
+          npm link
+
+          # Test basic commands
+          prompt --version
+          prompt --help
+
+          # Initialize repository
+          prompt init
+
+          # Test creating a prompt without API
+          prompt commit test-prompt \
+            -m "Test prompt" \
+            -c "This is a test prompt" \
+            --model gpt-4 \
+            --tags test,ci
+
+          # Test listing
+          prompt list
+
+          # Test history
+          prompt history test-prompt
+
+          # Test diff (single version)
+          prompt diff test-prompt || true
+
+          # Add another version
+          prompt commit test-prompt \
+            -m "Updated test prompt" \
+            -c "This is an updated test prompt"
+
+          # Test diff with two versions
+          prompt diff test-prompt
+
+      - name: Validate prompt structure
+        run: |
+          # Check that files were created correctly
+          ls -la .prompts/
+          ls -la .prompts/prompts/
+          ls -la .prompts/history/
+
+          # Validate YAML structure
+          cat .prompts/prompts/test-prompt.yaml

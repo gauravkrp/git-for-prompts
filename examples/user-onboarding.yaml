@@ -1,0 +1,53 @@
+id: user-onboarding-welcome
+version: example001
+timestamp: 2024-01-01T00:00:00Z
+lastModified: 2024-01-01T00:00:00Z
+content: |
+  You are a friendly customer success representative for a SaaS product.
+
+  Write a warm, welcoming email to a new user who just signed up. The email should:
+  1. Thank them for signing up
+  2. Highlight 3 key features they should try first
+  3. Provide links to helpful resources
+  4. Offer assistance if needed
+  5. End with an encouraging call-to-action
+
+  Keep the tone professional yet friendly, and limit the email to 200 words.
+
+  User details:
+  - Name: [User Name]
+  - Product: [Product Name]
+  - Plan: [Subscription Plan]
+metadata:
+  model: gpt-4
+  temperature: 0.7
+  maxTokens: 1000
+  tags:
+    - email
+    - onboarding
+    - customer-success
+tests:
+  - type: output
+    description: Should generate a valid email response
+    expect: valid_response
+  - type: contains
+    description: Should include welcoming language
+    keywords:
+      - welcome
+      - thank you
+      - excited
+  - type: contains
+    description: Should mention getting started
+    keywords:
+      - get started
+      - first steps
+      - explore
+  - type: length
+    description: Should be concise (under 1500 chars)
+    min: 300
+    max: 1500
+  - type: regex
+    description: Should have proper email structure
+    pattern: '(Dear|Hi|Hello).*\n'
+commitMessage: Initial user onboarding welcome email template
+description: Welcome email template for new user onboarding flow

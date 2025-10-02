@@ -1,0 +1,49 @@
+{
+  "name": "git-prompts",
+  "displayName": "Git for Prompts",
+  "description": "Version control for LLM prompts",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "activationEvents": [
+    "onCommand:git-prompts.savePrompt",
+    "onCommand:git-prompts.viewHistory",
+    "onCommand:git-prompts.runTest"
+  ],
+  "main": "./extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "git-prompts.savePrompt",
+        "title": "Save Prompt to Repository"
+      },
+      {
+        "command": "git-prompts.viewHistory",
+        "title": "View Prompt History"
+      },
+      {
+        "command": "git-prompts.runTest",
+        "title": "Test Current Prompt"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "git-prompts.savePrompt",
+          "group": "git-prompts",
+          "when": "editorTextFocus"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "git-prompts.savePrompt",
+        "key": "ctrl+shift+p ctrl+s",
+        "mac": "cmd+shift+p cmd+s",
+        "when": "editorTextFocus"
+      }
+    ]
+  }
+}

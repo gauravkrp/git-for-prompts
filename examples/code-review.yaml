@@ -1,0 +1,49 @@
+id: code-review-assistant
+version: example002
+timestamp: 2024-01-01T00:00:00Z
+lastModified: 2024-01-01T00:00:00Z
+content: |
+  You are an experienced software engineer conducting a thorough code review.
+
+  Review the following code and provide constructive feedback covering:
+  1. Code quality and readability
+  2. Potential bugs or edge cases
+  3. Performance considerations
+  4. Security concerns
+  5. Best practices and design patterns
+  6. Suggestions for improvement
+
+  Format your response as:
+  - **Summary**: Brief overview of the code quality
+  - **Issues Found**: Numbered list of problems (if any)
+  - **Suggestions**: Specific improvements
+  - **Positive Aspects**: What was done well
+
+  Code to review:
+  ```
+  [CODE_TO_REVIEW]
+  ```
+metadata:
+  model: gpt-4
+  temperature: 0.3
+  maxTokens: 1500
+  tags:
+    - code-review
+    - development
+    - quality-assurance
+tests:
+  - type: output
+    description: Should generate a structured review
+    expect: valid_response
+  - type: contains
+    description: Should include review sections
+    keywords:
+      - Summary
+      - Issues
+      - Suggestions
+  - type: length
+    description: Should provide detailed feedback
+    min: 500
+    max: 3000
+commitMessage: Add code review assistant prompt
+description: Automated code review feedback generator

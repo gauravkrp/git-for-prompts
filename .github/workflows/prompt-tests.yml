@@ -1,0 +1,115 @@
+name: Prompt Tests
+
+on:
+  pull_request:
+    paths:
+      - '.prompts/**'
+      - 'prompts/**'
+      - '**.yaml'
+      - '**.yml'
+  push:
+    branches: [main, master]
+    paths:
+      - '.prompts/**'
+      - 'prompts/**'
+      - '**.yaml'
+      - '**.yml'
+  workflow_dispatch:
+
+jobs:
+  test-prompts:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install git-prompts CLI
+        run: |
+          npm install -g git-prompts
+
+      - name: Run prompt tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          prompt test --verbose
+
+      - name: Generate diff report
+        if: github.event_name == 'pull_request'
+        run: |
+          # Get changed prompts
+          CHANGED_PROMPTS=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep -E '\\.prompts/prompts/.*\\.yaml$' | sed 's/.prompts\/prompts\///' | sed 's/.yaml//')
+
+          echo "## Prompt Changes Report" > report.md
+          echo "" >> report.md
+
+          for PROMPT_ID in $CHANGED_PROMPTS; do
+            echo "### Prompt: $PROMPT_ID" >> report.md
+            echo '```diff' >> report.md
+            prompt diff $PROMPT_ID --output >> report.md 2>&1 || true
+            echo '```' >> report.md
+            echo "" >> report.md
+          done
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+            let report = '## Prompt Test Results\\n\\n';
+
+            try {
+              const diffReport = fs.readFileSync('report.md', 'utf8');
+              report += diffReport;
+            } catch (e) {
+              report += 'No prompt changes detected.';
+            }
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });
+
+  regression-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install git-prompts CLI
+        run: |
+          npm install -g git-prompts
+
+      - name: Run regression tests
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          echo "Running regression tests for all prompts..."
+          prompt test --verbose
+
+          # Save test results as artifacts
+          prompt list > prompt-inventory.txt
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results
+          path: |
+            prompt-inventory.txt
+            .prompts/outputs/

@@ -38,7 +38,7 @@ Git for Prompts solves these problems by treating prompts as code.
 
 ```bash
 # Install globally
-npm install -g git-prompts
+npm install -g git-for-prompts
 
 # Or run the quickstart script
 ./quickstart.sh

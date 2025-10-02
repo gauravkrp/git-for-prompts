@@ -1,5 +1,5 @@
 {
-  "name": "git-prompts",
+  "name": "git-for-prompts",
   "version": "0.1.0",
   "description": "Git for Prompts - Version control, review, and test LLM prompts like code",
   "main": "dist/index.js",

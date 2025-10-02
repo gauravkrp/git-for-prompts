@@ -28,9 +28,11 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install git-prompts CLI
+      - name: Install dependencies and build
         run: |
-          npm install -g git-prompts
+          npm install
+          npm run build
+          npm link
 
       - name: Run prompt tests
         env:
@@ -91,9 +93,11 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Install git-prompts CLI
+      - name: Install dependencies and build
         run: |
-          npm install -g git-prompts
+          npm install
+          npm run build
+          npm link
 
       - name: Run regression tests
         env:

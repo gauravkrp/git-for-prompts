@@ -18,7 +18,7 @@ Git for Prompts brings software engineering best practices to prompt engineering
 ### Installation
 
 ```bash
-npm install -g git-prompts
+npm install -g git-for-prompts
 ```
 
 ### Initialize a prompts repository

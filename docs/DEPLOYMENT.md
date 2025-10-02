@@ -27,7 +27,7 @@ Git for Prompts can be deployed in various configurations depending on your need
 
 ```bash
 # 1. Install globally
-npm install -g git-prompts
+npm install -g git-for-prompts
 
 # 2. Initialize repository
 prompt init

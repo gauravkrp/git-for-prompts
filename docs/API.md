@@ -254,13 +254,13 @@ Found 3 prompt(s)
 
 ### Installation
 ```bash
-npm install git-prompts
+npm install git-for-prompts
 ```
 
 ### Basic Usage
 
 ```javascript
-import { PromptStore, LLMRunner } from 'git-prompts';
+import { PromptStore, LLMRunner } from 'git-for-prompts';
 
 // Initialize store
 const store = new PromptStore('.prompts');

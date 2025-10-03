@@ -1,4 +1,4 @@
-import { DaemonClient } from './daemon-server.js';
+import { CaptureDaemon } from './capture-daemon.js';
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
@@ -11,20 +11,20 @@ import os from 'os';
  * prompts when code changes are made.
  *
  * How it works:
- * 1. Connects to the persistent background daemon via DaemonClient
+ * 1. Starts a local CaptureDaemon in the same process/terminal
  * 2. Monitors conversation state and code changes
  * 3. Auto-commits prompts to .prompts/ when git commits are made
  *
  * @class ClaudeCodeIntegration
  */
 export class ClaudeCodeIntegration {
-  private client: DaemonClient;
+  private daemon: CaptureDaemon;
   private currentSessionId: string | null;
   private conversationBuffer: Array<{ role: 'user' | 'assistant'; content: string }>;
   private isActive: boolean;
 
   constructor() {
-    this.client = new DaemonClient();
+    this.daemon = new CaptureDaemon();
     this.currentSessionId = null;
     this.conversationBuffer = [];
     this.isActive = false;
@@ -41,18 +41,14 @@ export class ClaudeCodeIntegration {
       return;
     }
 
-    // Check if daemon is running
-    const daemonRunning = await this.client.isRunning();
-    if (!daemonRunning) {
-      console.log('Daemon not running. Start it with: gitify-prompt daemon start');
-      return;
-    }
-
     console.log('Initializing Claude Code prompt capture...');
 
-    // Create a new session via daemon client
+    // Start the daemon in-process (runs in same terminal as Claude Code)
+    await this.daemon.start();
+
+    // Create a new session
     // Always tag with repo path for multi-repo support
-    this.currentSessionId = await this.client.createSession('claude-code', {
+    this.currentSessionId = this.daemon.createSession('claude-code', {
       cwd: process.cwd(),
       repoPath: process.cwd(), // Used for filtering sessions by repo
       platform: process.platform,
@@ -64,7 +60,8 @@ export class ClaudeCodeIntegration {
     // Setup hooks to capture conversation
     this.setupConversationHooks();
 
-    console.log(`Claude Code session ${this.currentSessionId} started`);
+    console.log(`✓ Claude Code session ${this.currentSessionId} started`);
+    console.log(`  Repo: ${process.cwd()}`);
   }
 
   /**
@@ -130,7 +127,7 @@ export class ClaudeCodeIntegration {
     }
 
     this.conversationBuffer.push({ role: 'user', content });
-    await this.client.addMessage(this.currentSessionId, 'user', content);
+    this.daemon.addMessage(this.currentSessionId, 'user', content);
   }
 
   /**
@@ -147,7 +144,7 @@ export class ClaudeCodeIntegration {
     }
 
     this.conversationBuffer.push({ role: 'assistant', content });
-    await this.client.addMessage(this.currentSessionId, 'assistant', content);
+    this.daemon.addMessage(this.currentSessionId, 'assistant', content);
   }
 
   /**
@@ -179,7 +176,7 @@ export class ClaudeCodeIntegration {
       return;
     }
 
-    await this.client.addCodeChange(this.currentSessionId, filePath, beforeContent, afterContent);
+    this.daemon.addCodeChange(this.currentSessionId, filePath, beforeContent, afterContent);
   }
 
   /**
@@ -214,19 +211,27 @@ export class ClaudeCodeIntegration {
 
     const repoPath = process.cwd();
 
-    // Save ALL sessions for THIS repo (not just current session)
-    // This handles multiple IDE instances working on same repo
-    const sessionsSaved = await this.client.saveSessionsForRepo(repoPath, commitSha);
+    // Get all active sessions for THIS repo
+    const allSessions = this.daemon.getActiveSessions();
+    const repoSessions = allSessions.filter(s =>
+      s.metadata.cwd === repoPath ||
+      s.metadata.repoPath === repoPath
+    );
 
-    if (sessionsSaved > 0) {
-      console.log(`✓ Captured ${sessionsSaved} session(s) for commit ${commitSha}`);
+    // Save each session for this repo
+    for (const session of repoSessions) {
+      await this.daemon.saveSession(session, commitSha);
+    }
+
+    if (repoSessions.length > 0) {
+      console.log(`✓ Captured ${repoSessions.length} session(s) for commit ${commitSha}`);
     } else {
       console.log(`ℹ No active sessions to capture for this repo`);
     }
 
     // Start a new session for the next round of changes
     if (this.isActive) {
-      this.currentSessionId = await this.client.createSession('claude-code', {
+      this.currentSessionId = this.daemon.createSession('claude-code', {
         previousCommit: commitSha,
         cwd: process.cwd(),
         repoPath: process.cwd()
@@ -246,17 +251,23 @@ export class ClaudeCodeIntegration {
 
     // Save current session if it has content
     if (this.currentSessionId) {
-      await this.client.saveSession(this.currentSessionId);
+      const session = this.daemon.getSession(this.currentSessionId);
+      if (session) {
+        await this.daemon.saveSession(session);
+      }
     }
+
+    // Stop the daemon
+    await this.daemon.stop();
 
     this.isActive = false;
   }
 
   /**
-   * Get the daemon client instance
+   * Get the daemon instance
    */
-  getClient(): DaemonClient {
-    return this.client;
+  getDaemon(): CaptureDaemon {
+    return this.daemon;
   }
 
   /**

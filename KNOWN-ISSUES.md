@@ -9,18 +9,60 @@
 - ✅ CLI commands exist (`gitify-prompt daemon start/stop/status`)
 - ✅ Basic status check works when daemon not running
 - ✅ Code review completed for obvious bugs
+- ✅ **Unix socket communication** between client and server - WORKS!
+- ✅ **DaemonClient connection** - Successfully connects and retrieves status
+- ✅ **Daemon stop command** - Successfully stops running daemon
+- ✅ **Manual daemon start** - Daemon stays alive when started with `node dist/cli/daemon-process.js &`
 
 ### What Has NOT Been Tested:
-- ❌ **Daemon actually starting** as background process
-- ❌ **Unix socket communication** between client and server
-- ❌ **Session creation** via DaemonClient
+- ⚠️ **Daemon automated background spawn** - ISSUE: Process exits when spawned via `spawn()` with `detached: true`
+- ❌ **Session creation** via DaemonClient in real scenario
 - ❌ **Multi-repo filtering** in real scenario
 - ❌ **Git commit integration** with running daemon
-- ❌ **Process cleanup** on daemon stop
 
 ## Potential Issues
 
-### 1. Unix Socket Permissions
+### 1. Daemon Background Spawn Issue (CRITICAL)
+**Issue**: Daemon exits immediately when spawned via `spawn()` with `detached: true`.
+
+**Status**: ⚠️ **CRITICAL** - Automated daemon start doesn't work
+
+**Workaround**: Start daemon manually:
+```bash
+# Start daemon manually (works correctly)
+node dist/cli/daemon-process.js &
+
+# Verify it's running
+gitify-prompt daemon status
+```
+
+**Investigation Findings**:
+- ✅ Daemon process code is correct - stays alive when run manually
+- ✅ Unix socket server works correctly
+- ✅ DaemonClient connects and communicates successfully
+- ❌ Process exits when spawned with `spawn()` detached mode
+- Logs show daemon starts successfully but process disappears
+- No error messages in daemon-err.log
+- Likely related to Node.js process detachment or file descriptor handling
+
+**Potential Root Causes**:
+1. File descriptor closure timing issue
+2. Child process group ID not set correctly
+3. Process receiving unexpected signal (HUP, PIPE)
+4. Node.js event loop exiting despite Unix socket server
+
+**Fix Attempts**:
+- ✅ Tried adding explicit `await new Promise(() => {})` keepalive - didn't help
+- ✅ Tried closing file descriptors in parent after spawn - didn't help
+- ✅ Increased wait time to 1500ms - didn't help
+
+**Next Steps to Debug**:
+1. Try using `nohup` wrapper instead of `spawn()` detached
+2. Add process event listeners for all signals to log what's happening
+3. Try TCP socket instead of Unix socket to rule out socket issues
+4. Test on different OS (Linux vs macOS)
+
+### 2. Unix Socket Permissions
 **Issue**: Unix socket at `/tmp/gitify-prompt/daemon.sock` may have permission issues.
 
 **Symptoms**:
@@ -36,7 +78,7 @@ ls -la /tmp/gitify-prompt/daemon.sock
 chmod 666 /tmp/gitify-prompt/daemon.sock
 ```
 
-### 2. Stale PID Files
+### 3. Stale PID Files
 **Issue**: If daemon crashes, PID file might remain.
 
 **Symptoms**:
@@ -50,7 +92,7 @@ rm /tmp/gitify-prompt/daemon.pid
 rm /tmp/gitify-prompt/daemon.sock
 ```
 
-### 3. Path Resolution in Compiled Code
+### 4. Path Resolution in Compiled Code
 **Issue**: `__dirname` might not work correctly in ESM modules.
 
 **Symptoms**:
@@ -62,7 +104,7 @@ rm /tmp/gitify-prompt/daemon.sock
 const scriptPath = path.join(process.cwd(), 'dist', 'cli', 'daemon-process.js');
 ```
 
-### 4. Session Metadata Not Properly Tagged
+### 5. Session Metadata Not Properly Tagged
 **Issue**: Sessions might not get `repoPath` metadata.
 
 **Symptoms**:
@@ -76,7 +118,7 @@ gitify-prompt daemon status
 # Look for "Repo:" field in session details
 ```
 
-### 5. Git Hook Not Working
+### 6. Git Hook Not Working
 **Issue**: The git post-commit hook references old package name.
 
 **Current hook**:

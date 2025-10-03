@@ -1,417 +1,329 @@
-# Git for Prompts (PromptOps)
+# Gitify Prompt
 
-**Version control, review, and test LLM prompts like code.**
-
-Git for Prompts brings software engineering best practices to prompt engineering. Version your prompts, review changes in pull requests, and run regression tests in CI/CD pipelines.
-
-## ✨ New: Automatic Prompt Capture
-
-**Never manually save prompts again!** Git for Prompts now automatically captures all AI interactions from Claude Code and Cursor IDE. Every conversation is captured, version-controlled, and linked to your git commits.
-
-[**📖 See the Automation Guide →**](AUTOMATION.md)
+**Version control for LLM prompts** - Automatically capture and track your Claude Code conversations linked to git commits.
 
 ## Features
 
-- **🤖 Automatic Capture** - Auto-capture prompts from Claude Code and Cursor IDE
-- **🔗 Git Integration** - Automatically link prompts to git commits
-- **📝 CLI for prompt management** - Commit, diff, and track gitify-prompt history
-- **📊 Side-by-side diff** - Compare old vs new prompt outputs
-- **👥 PR-style review workflow** - Review prompt changes before deployment
-- **🔄 CI integration** - Run prompts against test suites automatically
-- **🎯 Multi-model support** - Test across GPT, Claude, and local models
-- **🔌 VS Code/Cursor extension** - Auto-capture with zero configuration
+- 🤖 **Auto-Capture for Claude Code** - Automatically captures prompts when you use `claude` command
+- 🔗 **Git Integration** - Prompts automatically saved and linked to your git commits
+- 📝 **Version Control** - Track prompt changes over time
+- 🧪 **Testing Framework** - Define and run tests to validate prompts
+- 📊 **Diff & History** - Compare prompt versions and view evolution
+- 🔍 **Search & Filter** - Find prompts by tags, models, or content
 
 ## Installation
 
-**⚠️ This package is not yet published to npm. Install from source:**
-
 ```bash
 # Clone the repository
-git clone https://github.com/gauravkrp/git-for-prompts.git
-cd git-for-prompts
+git clone https://github.com/yourusername/git-prompts.git
+cd git-prompts
 
-# Install, build, and link globally
+# Install dependencies
 npm install
+
+# Build
 npm run build
+
+# Link globally
 npm link
 
 # Verify installation
 gitify-prompt --version
 ```
 
-Now the `gitify-prompt` command is available globally! 🎉
-
-[**📖 Detailed Installation Guide →**](GETTING-STARTED.md)
-
----
-
 ## Quick Start
 
-### Option 1: Automatic Capture (Recommended)
+### 1. Initialize Your Project
 
-**For Claude Code Terminal:**
 ```bash
-# 1. Go to your project
-cd your-project
-
-# 2. Initialize Git for Prompts
-gitify-prompt init
-
-# 3. Start auto-capture daemon
-gitify-prompt daemon start
-
-# 4. Work normally - prompts are captured automatically!
-# When you commit, prompts are auto-saved and linked
-git commit -m "Your changes"
-# ✓ Prompts automatically captured and linked to commit
-```
-
-**For Cursor IDE:**
-```bash
-# 1. Initialize in your project
 cd your-project
 gitify-prompt init
-
-# 2. Install Cursor extension
-cd /path/to/git-for-prompts/cursor-extension
-npm install && npm run compile
-# Then install in Cursor (F5 to debug or build .vsix)
-
-# 3. Extension auto-starts and captures everything!
 ```
 
-[**📖 Full Setup Guide for New Users →**](GETTING-STARTED.md)
+This creates:
+- `.prompts/` directory for storing prompts
+- `.git/hooks/post-commit` git hook for auto-capture
 
-### Option 2: Manual Workflow
+### 2. Start Using Claude Code
 
 ```bash
-# Install
-npm install -g gitify-prompt
+# Just use Claude normally
+claude
 
-# Initialize a prompts repository
-gitify-prompt init
+# The integration starts automatically!
+# Your conversation is captured as you work
 ```
 
-This creates a `.prompts/` directory with the following structure:
-```
-.prompts/
-├── config.yaml       # Configuration
-├── prompts/          # Current prompt versions
-├── outputs/          # Generated outputs
-└── history/          # Version history
-```
-
-### Daemon Commands (Auto-Capture)
+### 3. Make Changes and Commit
 
 ```bash
-# Start the capture daemon
-gitify-prompt daemon start
+# Make your code changes
+# ... work with Claude ...
 
-# Check daemon status and active sessions
-gitify-prompt daemon status
+# Commit your changes
+git add .
+git commit -m "Add new feature"
 
-# Configure auto-capture settings
-gitify-prompt daemon config --enable-claude-code true
-gitify-prompt daemon config --enable-cursor true
-
-# Install as system service (optional)
-gitify-prompt daemon install
+# ✓ Prompts automatically captured and linked to this commit!
 ```
 
-### Manual Prompt Commands
+## How It Works
 
-```bash
-# Interactive mode
-gitify-prompt commit user-onboarding
+### Automatic Capture
 
-# With inline content
-gitify-prompt commit user-onboarding \
-  -m "Add onboarding email template" \
-  -c "Write a friendly welcome email for new users..." \
-  --model gpt-4 \
-  --tags email,onboarding
+When you run the `claude` command:
+
+1. **In-Process Daemon**: A capture daemon starts in the same terminal process
+2. **Session Tracking**: Creates a session tagged with your repository path
+3. **Auto-Tagging**: All sessions are tagged with `repoPath` for multi-repo support
+4. **Git Hook Integration**: On commit, the post-commit hook saves all prompts for your repo
+
+### Multi-Repository Support
+
+Gitify Prompt automatically handles multiple repositories:
+
+- Each session is tagged with `repoPath`
+- Git commits only save prompts for the current repository
+- Works seamlessly across different projects
+
+### Repository Structure
+
+```
+your-project/
+├── .prompts/
+│   ├── config.json          # Configuration
+│   ├── prompts/             # Captured prompt files
+│   │   ├── <timestamp>-<sha>.json
+│   │   └── ...
+│   └── tests/               # Test specifications
+└── .git/
+    └── hooks/
+        └── post-commit      # Auto-capture hook
 ```
 
-### View gitify-prompt history
+### Prompt Format
 
-```bash
-gitify-prompt history user-onboarding
+Each captured prompt includes:
+
+```json
+{
+  "id": "session-id",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "tool": "claude-code",
+  "metadata": {
+    "commitSha": "abc123",
+    "repoPath": "/path/to/your/repo",
+    "cwd": "/path/to/your/repo",
+    "platform": "darwin"
+  },
+  "conversation": [
+    { "role": "user", "content": "..." },
+    { "role": "assistant", "content": "..." }
+  ],
+  "code_changes": [
+    {
+      "file": "src/index.ts",
+      "before": "old content",
+      "after": "new content"
+    }
+  ]
+}
 ```
 
-### Compare versions
+## Manual Prompt Management
+
+You can also manually manage prompts:
 
 ```bash
-# Compare with previous version
-gitify-prompt diff user-onboarding
+# Create a prompt
+gitify-prompt commit my-prompt \
+  -c "Write a function to..." \
+  -m "Initial version" \
+  --model claude-3-opus \
+  --tags feature,bugfix
 
-# Compare specific versions
-gitify-prompt diff user-onboarding --from abc123 --to def456
+# View prompt history
+gitify-prompt history my-prompt
 
-# Include output comparison
-gitify-prompt diff user-onboarding --output
-```
+# Compare versions
+gitify-prompt diff my-prompt --from v1 --to v2
 
-### Run tests
-
-```bash
-# Test a specific prompt
-gitify-prompt test user-onboarding
-
-# Test all prompts
-gitify-prompt test
-
-# Verbose output
-gitify-prompt test --verbose
-```
-
-### List all prompts
-
-```bash
-# List all
+# List all prompts
 gitify-prompt list
+gitify-prompt list --tags feature
+gitify-prompt list --model claude-3
 
-# Filter by tags
-gitify-prompt list --tags email
-
-# Filter by model
-gitify-prompt list --model gpt-4
+# Run tests
+gitify-prompt test my-prompt
+gitify-prompt test --verbose
 ```
 
 ## Configuration
 
-### Environment Variables
+Edit `.prompts/config.json`:
 
-Create a `.env` file in your project root:
-
-```bash
-cp .env.example .env
+```json
+{
+  "autoCapture": {
+    "enabled": true,
+    "tools": {
+      "claudeCode": true,
+      "cursor": false,
+      "chatgpt": false
+    }
+  },
+  "privacy": {
+    "maskSensitiveData": true,
+    "excludePatterns": [
+      "*.env",
+      "*secret*",
+      "*password*",
+      "*api*key*"
+    ]
+  }
+}
 ```
 
-Add your API keys:
-```
-OPENAI_API_KEY=sk-...
-ANTHROPIC_API_KEY=sk-ant-...
-```
+## Testing Prompts
 
-### Prompt Schema
-
-Prompts are stored as YAML files with the following structure:
+Define tests to validate prompt behavior:
 
 ```yaml
-id: user-onboarding
-version: abc123
-timestamp: 2024-01-01T00:00:00Z
+# .prompts/prompts/my-prompt.yaml
+id: my-prompt
 content: |
-  Write a friendly welcome email...
-metadata:
-  model: gpt-4
-  temperature: 0.7
-  maxTokens: 1000
-  tags:
-    - email
-    - onboarding
+  Write a function to...
 tests:
   - type: output
     description: Should generate valid response
   - type: contains
-    description: Should mention key features
+    description: Should mention key concepts
     keywords:
-      - welcome
-      - get started
-  - type: length
-    description: Should be concise
-    min: 100
-    max: 500
-commitMessage: Add onboarding email template
-```
-
-## CI/CD Integration
-
-### GitHub Actions
-
-Add the provided workflow to `.github/workflows/prompt-tests.yml`:
-
-```yaml
-name: Prompt Tests
-
-on:
-  pull_request:
-    paths:
-      - '.prompts/**'
-
-jobs:
-  test-prompts:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Install git-prompts
-        run: npm install -g git-prompts
-      - name: Run tests
-        env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: gitify-prompt test --verbose
-```
-
-### PR Comments
-
-The GitHub Action automatically:
-- Runs tests on prompt changes
-- Posts diff comparisons as PR comments
-- Shows side-by-side output differences
-- Blocks merge if tests fail
-
-## VS Code Extension
-
-### Installation
-
-1. Open the `vscode-extension` folder in VS Code
-2. Run `npm install`
-3. Press F5 to launch a new VS Code window with the extension
-
-### Usage
-
-- **Save Prompt**: Right-click in editor → "Save Prompt to Repository"
-- **View History**: Command Palette → "View Prompt History"
-- **Run Tests**: Command Palette → "Test Current Prompt"
-- **Keyboard Shortcut**: `Ctrl+Shift+P, Ctrl+S` (Mac: `Cmd+Shift+P, Cmd+S`)
-
-## Test Types
-
-### Output Test
-Validates that the prompt generates a valid response:
-
-```yaml
-tests:
-  - type: output
-    description: Should generate valid response
-```
-
-### Contains Test
-Checks if output contains specific keywords:
-
-```yaml
-tests:
-  - type: contains
-    description: Should mention features
-    keywords:
-      - feature1
-      - feature2
-```
-
-### Length Test
-Validates output length constraints:
-
-```yaml
-tests:
+      - function
+      - parameter
   - type: length
     description: Should be concise
     min: 100
     max: 500
 ```
 
-### Regex Test
-Matches output against regex patterns:
-
-```yaml
-tests:
-  - type: regex
-    description: Should follow email format
-    pattern: '^Subject:.*\n\nDear'
-```
-
-## Advanced Usage
-
-### Multi-Model Testing
-
-Test the same prompt across different models:
+Run tests:
 
 ```bash
-# Override model for testing
-gitify-prompt test user-onboarding --model gpt-3.5-turbo
-gitify-prompt test user-onboarding --model claude-3
+gitify-prompt test my-prompt --verbose
 ```
 
-### Batch Operations
+## Programmatic API
+
+```typescript
+import { CaptureDaemon, ClaudeCodeIntegration } from 'gitify-prompt';
+
+// Use Claude Code integration
+import { claudeCodeIntegration } from 'gitify-prompt';
+await claudeCodeIntegration.init();
+
+// Or use CaptureDaemon directly
+const daemon = new CaptureDaemon();
+await daemon.start();
+
+const sessionId = daemon.createSession('my-tool', {
+  repoPath: process.cwd()
+});
+
+daemon.addMessage(sessionId, 'user', 'Hello!');
+daemon.addMessage(sessionId, 'assistant', 'Hi there!');
+
+const session = daemon.getSession(sessionId);
+await daemon.saveSession(session, 'commit-sha');
+```
+
+## Commands Reference
+
+### `gitify-prompt init`
+Initialize a prompt repository in the current directory.
+
+### `gitify-prompt commit <prompt-id>`
+Commit a new prompt or update an existing one.
+
+### `gitify-prompt list [options]`
+List all prompts. Filter by `--tags` or `--model`.
+
+### `gitify-prompt history <prompt-id> [options]`
+Show commit history. Use `-n` to limit results.
+
+### `gitify-prompt diff <prompt-id> [options]`
+Compare versions. Use `--from` and `--to` for specific versions.
+
+### `gitify-prompt test [prompt-id] [options]`
+Run tests. Use `--verbose` for detailed output.
+
+## Use Cases
+
+### 1. Track Prompt Evolution
+```bash
+gitify-prompt history "sql-generator"
+gitify-prompt diff "sql-generator" --from v1 --to v3
+```
+
+### 2. Team Collaboration
+```bash
+git add .prompts/
+git commit -m "Improve data extraction prompt"
+git push
+```
+
+### 3. Automated Capture Workflow
+```bash
+# Just use Claude - everything is automatic!
+claude
+# ... work ...
+git commit -m "Feature complete"
+# Prompts auto-captured!
+```
+
+## Troubleshooting
+
+### Prompts Not Being Captured
+
+1. Make sure you initialized: `gitify-prompt init`
+2. Check the git hook exists: `cat .git/hooks/post-commit`
+3. Verify config: `cat .prompts/config.json`
+4. Check that `autoCapture.enabled` is `true`
+
+### Re-initialize
 
 ```bash
-# Test all prompts with a specific tag
-for id in $(gitify-prompt list --tags email | grep -o '^[^ ]*'); do
-  gitify-prompt test $id
-done
+gitify-prompt init
 ```
 
-### Export/Import
+This recreates the `.prompts/` directory and git hooks.
 
-```bash
-# Export all prompts
-cp -r .prompts /backup/location
+## Privacy & Security
 
-# Import prompts
-cp -r /backup/location/.prompts .
-```
+- **Sensitive Data Masking**: Automatically masks passwords, API keys, etc.
+- **Exclude Patterns**: Configure files/patterns to never capture
+- **Local Storage**: All prompts stored locally in `.prompts/`
+- **Repository Isolation**: Each repo's sessions are kept separate
 
 ## Development
-
-### Running Locally
 
 ```bash
 # Install dependencies
 npm install
 
-# Run CLI in development mode
-npm run dev
+# Build
+npm run build
 
 # Run tests
 npm test
+
+# Link for local development
+npm link
 ```
-
-### Architecture
-
-```
-src/
-├── cli/              # CLI entry point
-├── commands/         # Command implementations
-│   ├── init.js
-│   ├── commit.js
-│   ├── diff.js
-│   ├── history.js
-│   ├── test.js
-│   └── list.js
-└── lib/              # Core libraries
-    ├── prompt-store.js   # Storage layer
-    └── llm-runner.js     # LLM integration
-```
-
-## What's New in v0.1.0
-
-✅ **Automatic prompt capture** for Claude Code and Cursor IDE
-✅ **Background daemon** for zero-friction capture
-✅ **Git commit linking** - prompts automatically linked to commits
-✅ **Cursor extension** with status bar integration
-✅ **Privacy controls** - sensitive data masking and exclusion patterns
-✅ **Configurable** - per-tool enablement and settings
-
-[See Implementation Details →](IMPLEMENTATION.md)
-
-## Roadmap
-
-- [x] Automatic capture for Claude Code
-- [x] Automatic capture for Cursor IDE
-- [x] Git commit linking
-- [ ] Browser extension for ChatGPT/Claude web
-- [ ] Support for Anthropic Claude models
-- [ ] Local LLM support (Ollama, LMStudio)
-- [ ] Web dashboard for team collaboration
-- [ ] Prompt marketplace/sharing
-- [ ] Advanced testing (A/B tests, regression suites)
-- [ ] Prompt composition and templating
-- [ ] Cost tracking and optimization
-- [ ] Integration with LangChain/LangSmith
-- [ ] Deterministic replay with seed support
 
 ## Contributing
 
-Contributions are welcome! Please read our contributing guidelines and submit PRs.
+Contributions welcome! Please open an issue or PR.
 
 ## License
 
@@ -419,4 +331,10 @@ MIT
 
 ---
 
-**Git for Prompts** - Making prompt engineering as rigorous as software engineering.
+**Start capturing your Claude Code prompts today!**
+
+```bash
+cd your-project
+gitify-prompt init
+claude
+```

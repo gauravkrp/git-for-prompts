@@ -272,7 +272,9 @@ export class DaemonServer {
  * Start daemon as detached background process
  */
 export async function startDaemonBackground(): Promise<void> {
-  const scriptPath = path.join(__dirname, '../cli/daemon-process.js');
+  // In ESM, __dirname doesn't exist, use import.meta.url
+  // But since we're CommonJS in compiled output, use __dirname
+  const scriptPath = path.join(__dirname, '..', 'cli', 'daemon-process.js');
 
   const child = spawn(
     process.execPath,

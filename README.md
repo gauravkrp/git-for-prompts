@@ -14,7 +14,7 @@ Git for Prompts brings software engineering best practices to prompt engineering
 
 - **🤖 Automatic Capture** - Auto-capture prompts from Claude Code and Cursor IDE
 - **🔗 Git Integration** - Automatically link prompts to git commits
-- **📝 CLI for prompt management** - Commit, diff, and track prompt history
+- **📝 CLI for prompt management** - Commit, diff, and track gitify-prompt history
 - **📊 Side-by-side diff** - Compare old vs new prompt outputs
 - **👥 PR-style review workflow** - Review prompt changes before deployment
 - **🔄 CI integration** - Run prompts against test suites automatically
@@ -36,10 +36,10 @@ npm run build
 npm link
 
 # Verify installation
-prompt --version
+gitify-prompt --version
 ```
 
-Now the `prompt` command is available globally! 🎉
+Now the `gitify-prompt` command is available globally! 🎉
 
 [**📖 Detailed Installation Guide →**](GETTING-STARTED.md)
 
@@ -55,10 +55,10 @@ Now the `prompt` command is available globally! 🎉
 cd your-project
 
 # 2. Initialize Git for Prompts
-prompt init
+gitify-prompt init
 
 # 3. Start auto-capture daemon
-prompt daemon start
+gitify-prompt daemon start
 
 # 4. Work normally - prompts are captured automatically!
 # When you commit, prompts are auto-saved and linked
@@ -70,7 +70,7 @@ git commit -m "Your changes"
 ```bash
 # 1. Initialize in your project
 cd your-project
-prompt init
+gitify-prompt init
 
 # 2. Install Cursor extension
 cd /path/to/git-for-prompts/cursor-extension
@@ -86,10 +86,10 @@ npm install && npm run compile
 
 ```bash
 # Install
-npm install -g git-for-prompts
+npm install -g gitify-prompt
 
 # Initialize a prompts repository
-prompt init
+gitify-prompt init
 ```
 
 This creates a `.prompts/` directory with the following structure:
@@ -105,76 +105,76 @@ This creates a `.prompts/` directory with the following structure:
 
 ```bash
 # Start the capture daemon
-prompt daemon start
+gitify-prompt daemon start
 
 # Check daemon status and active sessions
-prompt daemon status
+gitify-prompt daemon status
 
 # Configure auto-capture settings
-prompt daemon config --enable-claude-code true
-prompt daemon config --enable-cursor true
+gitify-prompt daemon config --enable-claude-code true
+gitify-prompt daemon config --enable-cursor true
 
 # Install as system service (optional)
-prompt daemon install
+gitify-prompt daemon install
 ```
 
 ### Manual Prompt Commands
 
 ```bash
 # Interactive mode
-prompt commit user-onboarding
+gitify-prompt commit user-onboarding
 
 # With inline content
-prompt commit user-onboarding \
+gitify-prompt commit user-onboarding \
   -m "Add onboarding email template" \
   -c "Write a friendly welcome email for new users..." \
   --model gpt-4 \
   --tags email,onboarding
 ```
 
-### View prompt history
+### View gitify-prompt history
 
 ```bash
-prompt history user-onboarding
+gitify-prompt history user-onboarding
 ```
 
 ### Compare versions
 
 ```bash
 # Compare with previous version
-prompt diff user-onboarding
+gitify-prompt diff user-onboarding
 
 # Compare specific versions
-prompt diff user-onboarding --from abc123 --to def456
+gitify-prompt diff user-onboarding --from abc123 --to def456
 
 # Include output comparison
-prompt diff user-onboarding --output
+gitify-prompt diff user-onboarding --output
 ```
 
 ### Run tests
 
 ```bash
 # Test a specific prompt
-prompt test user-onboarding
+gitify-prompt test user-onboarding
 
 # Test all prompts
-prompt test
+gitify-prompt test
 
 # Verbose output
-prompt test --verbose
+gitify-prompt test --verbose
 ```
 
 ### List all prompts
 
 ```bash
 # List all
-prompt list
+gitify-prompt list
 
 # Filter by tags
-prompt list --tags email
+gitify-prompt list --tags email
 
 # Filter by model
-prompt list --model gpt-4
+gitify-prompt list --model gpt-4
 ```
 
 ## Configuration
@@ -249,7 +249,7 @@ jobs:
       - name: Run tests
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-        run: prompt test --verbose
+        run: gitify-prompt test --verbose
 ```
 
 ### PR Comments
@@ -327,16 +327,16 @@ Test the same prompt across different models:
 
 ```bash
 # Override model for testing
-prompt test user-onboarding --model gpt-3.5-turbo
-prompt test user-onboarding --model claude-3
+gitify-prompt test user-onboarding --model gpt-3.5-turbo
+gitify-prompt test user-onboarding --model claude-3
 ```
 
 ### Batch Operations
 
 ```bash
 # Test all prompts with a specific tag
-for id in $(prompt list --tags email | grep -o '^[^ ]*'); do
-  prompt test $id
+for id in $(gitify-prompt list --tags email | grep -o '^[^ ]*'); do
+  gitify-prompt test $id
 done
 ```
 

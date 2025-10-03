@@ -13,8 +13,8 @@ import { startDaemon, daemonStatus, configureDaemon, installDaemonService } from
 const program = new Command();
 
 program
-  .name('prompt')
-  .description('Git for Prompts - Version control, review, and test LLM prompts')
+  .name('gitify-prompt')
+  .description('Gitify Prompt - Version control, review, and test LLM prompts')
   .version('0.1.0');
 
 program

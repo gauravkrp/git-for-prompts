@@ -18,10 +18,10 @@ The Claude Code integration automatically captures your conversations:
 
 ```bash
 # 1. Initialize Git for Prompts in your project
-prompt init
+gitify-prompt init
 
 # 2. Start the daemon
-prompt daemon start
+gitify-prompt daemon start
 
 # 3. Work normally with Claude Code
 # All conversations are automatically captured
@@ -134,17 +134,17 @@ cp .promptrc.example.json .promptrc.json
 
 ```bash
 # View current config
-prompt daemon status
+gitify-prompt daemon status
 
 # Enable/disable auto-capture
-prompt daemon config --enable-auto-capture true
+gitify-prompt daemon config --enable-auto-capture true
 
 # Enable specific tools
-prompt daemon config --enable-claude-code true
-prompt daemon config --enable-cursor true
+gitify-prompt daemon config --enable-claude-code true
+gitify-prompt daemon config --enable-cursor true
 
 # Privacy settings
-prompt daemon config --mask-sensitive true
+gitify-prompt daemon config --mask-sensitive true
 ```
 
 ## Daemon Commands
@@ -152,7 +152,7 @@ prompt daemon config --mask-sensitive true
 ### Start Daemon
 
 ```bash
-prompt daemon start
+gitify-prompt daemon start
 ```
 
 Starts the background daemon. It will:
@@ -164,7 +164,7 @@ Starts the background daemon. It will:
 ### Check Status
 
 ```bash
-prompt daemon status
+gitify-prompt daemon status
 ```
 
 Shows:
@@ -176,7 +176,7 @@ Shows:
 ### Configure
 
 ```bash
-prompt daemon config [options]
+gitify-prompt daemon config [options]
 ```
 
 Options:
@@ -191,7 +191,7 @@ Options:
 For always-on capture:
 
 ```bash
-prompt daemon install
+gitify-prompt daemon install
 ```
 
 This creates a system service that runs automatically:
@@ -255,7 +255,7 @@ All prompts are stored **locally** in `.prompts/`:
 
 ```bash
 # You're working on a new feature
-$ prompt daemon start
+$ gitify-prompt daemon start
 ✓ Daemon started
 
 # Ask Claude Code to help
@@ -290,7 +290,7 @@ $ git commit -m "Fix null pointer in getUserData"
 ✓ Prompts captured for commit d4e5f6g
 
 # Later, you can review what AI suggestions led to this fix
-$ prompt history fix-null-pointer
+$ gitify-prompt history fix-null-pointer
 ```
 
 ### Example 3: Refactoring
@@ -372,7 +372,7 @@ await integration.onGitCommit(commitSha);
 ls -la .prompts
 
 # Initialize if needed
-prompt init
+gitify-prompt init
 
 # Check daemon logs
 tail -f /tmp/prompt-daemon.log
@@ -380,7 +380,7 @@ tail -f /tmp/prompt-daemon.log
 
 ### Prompts Not Being Captured
 
-1. Verify daemon is running: `prompt daemon status`
+1. Verify daemon is running: `gitify-prompt daemon status`
 2. Check config: `cat ~/.promptrc.json`
 3. Ensure auto-capture is enabled
 4. Check for errors in logs
@@ -391,8 +391,8 @@ tail -f /tmp/prompt-daemon.log
 # Check if hook exists
 ls -la .git/hooks/post-commit
 
-# Reinstall with prompt init
-prompt init
+# Reinstall with gitify-prompt init
+gitify-prompt init
 
 # Make sure hook is executable
 chmod +x .git/hooks/post-commit
@@ -411,7 +411,7 @@ chmod +x .git/hooks/post-commit
 A: Yes! Everything is local. No internet required.
 
 **Q: What happens if I don't want to capture a session?**
-A: Stop the daemon: `prompt daemon stop`, or don't commit the code.
+A: Stop the daemon: `gitify-prompt daemon stop`, or don't commit the code.
 
 **Q: Can I manually edit captured prompts?**
 A: Yes! They're just YAML files in `.prompts/`. Edit as needed.
@@ -427,10 +427,10 @@ A: Yes, but auto-linking to commits won't work. Use manual save.
 
 ## Next Steps
 
-- Review captured prompts: `prompt list`
-- Compare versions: `prompt diff <prompt-id>`
-- Run tests: `prompt test`
-- View history: `prompt history <prompt-id>`
+- Review captured prompts: `gitify-prompt list`
+- Compare versions: `gitify-prompt diff <prompt-id>`
+- Run tests: `gitify-prompt test`
+- View history: `gitify-prompt history <prompt-id>`
 
 ---
 

@@ -32,17 +32,17 @@ npm link
 **Verify installation:**
 ```bash
 # This should now work from any directory
-prompt --version
+gitify-prompt --version
 # Output: 0.1.0
 
-prompt --help
+gitify-prompt --help
 # Shows all available commands
 ```
 
 **What `npm link` does:**
 - Creates a symlink in your global node_modules
-- Makes the `prompt` command available system-wide
-- Now you can run `prompt` from any directory
+- Makes the `gitify-prompt` command available system-wide
+- Now you can run `gitify-prompt` from any directory
 
 **Alternative: Use without global install**
 ```bash
@@ -52,13 +52,13 @@ node dist/cli/index.js --help
 
 # Or create an alias in your shell:
 # Add to ~/.bashrc or ~/.zshrc:
-alias prompt='node /path/to/git-for-prompts/dist/cli/index.js'
+alias gitify-prompt='node /path/to/git-for-prompts/dist/cli/index.js'
 ```
 
 ### Step 2: Verify Installation
 
 ```bash
-prompt --help
+gitify-prompt --help
 ```
 
 You should see:
@@ -85,7 +85,7 @@ Navigate to your project directory and initialize:
 
 ```bash
 cd ~/your-project
-prompt init
+gitify-prompt init
 ```
 
 This creates a `.prompts/` directory:
@@ -119,7 +119,7 @@ git add .prompts/
 
 ```bash
 # In your project directory
-prompt daemon start
+gitify-prompt daemon start
 ```
 
 You'll see:
@@ -162,13 +162,13 @@ git commit -m "Refactored user authentication"
 
 ```bash
 # List all prompts
-prompt list
+gitify-prompt list
 
 # View a specific prompt's history
-prompt history <prompt-id>
+gitify-prompt history <prompt-id>
 
 # See the diff
-prompt diff <prompt-id>
+gitify-prompt diff <prompt-id>
 ```
 
 ## For Cursor IDE Users
@@ -266,7 +266,7 @@ nano ~/.promptrc.json
 ### Check Configuration
 
 ```bash
-prompt daemon status
+gitify-prompt daemon status
 ```
 
 Output:
@@ -293,7 +293,7 @@ Privacy Settings:
 To have the daemon always running in the background:
 
 ```bash
-prompt daemon install
+gitify-prompt daemon install
 ```
 
 **On macOS:**
@@ -308,7 +308,7 @@ launchctl unload ~/Library/LaunchAgents/com.gitforprompts.daemon.plist
 
 **On Linux:**
 ```bash
-# Follow the instructions shown after running 'prompt daemon install'
+# Follow the instructions shown after running 'gitify-prompt daemon install'
 # Creates systemd service
 sudo systemctl enable git-prompts-daemon
 sudo systemctl start git-prompts-daemon
@@ -336,10 +336,10 @@ npm install && npm run build && npm link
 cd ~/my-app
 
 # 3. Initialize
-prompt init
+gitify-prompt init
 
 # 4. Start daemon
-prompt daemon start
+gitify-prompt daemon start
 ```
 
 ### Day 2: Development
@@ -368,7 +368,7 @@ git commit -m "Add JWT auth with refresh tokens"
 
 ```bash
 # See what prompts were captured
-prompt list
+gitify-prompt list
 
 # Output:
 # add-jwt-authentication    [auto-captured] claude-code    2024-01-15
@@ -376,10 +376,10 @@ prompt list
 # refactor-db-queries       [auto-captured] claude-code    2024-01-13
 
 # View details of a specific prompt
-prompt history add-jwt-authentication
+gitify-prompt history add-jwt-authentication
 
 # Compare versions
-prompt diff add-jwt-authentication
+gitify-prompt diff add-jwt-authentication
 ```
 
 ### Day 4: Share with Team
@@ -390,8 +390,8 @@ git push
 
 # Team members can now:
 git pull
-prompt list  # See all the prompts you used
-prompt diff add-jwt-authentication  # Review your AI workflow
+gitify-prompt list  # See all the prompts you used
+gitify-prompt diff add-jwt-authentication  # Review your AI workflow
 ```
 
 ## Troubleshooting
@@ -406,7 +406,7 @@ prompt diff add-jwt-authentication  # Review your AI workflow
 cd ~/your-project
 
 # Initialize
-prompt init
+gitify-prompt init
 ```
 
 ### Daemon not capturing conversations
@@ -416,17 +416,17 @@ prompt init
 **Solution:**
 ```bash
 # Check daemon status
-prompt daemon status
+gitify-prompt daemon status
 
 # Restart daemon
 # Press Ctrl+C to stop
-prompt daemon start
+gitify-prompt daemon start
 
 # Check configuration
 cat ~/.promptrc.json
 
 # Ensure auto-capture is enabled
-prompt daemon config --enable-claude-code true
+gitify-prompt daemon config --enable-claude-code true
 ```
 
 ### Cursor extension not working
@@ -449,7 +449,7 @@ prompt daemon config --enable-claude-code true
 ls -la .git/hooks/post-commit
 
 # Reinstall hooks
-prompt init
+gitify-prompt init
 
 # Make hook executable
 chmod +x .git/hooks/post-commit
@@ -466,11 +466,11 @@ cd git-for-prompts
 npm link
 
 # If installed from npm:
-npm install -g git-for-prompts
+npm install -g gitify-prompt
 
 # Verify:
-which prompt
-prompt --version
+which gitify-prompt
+gitify-prompt --version
 ```
 
 ## Need Help?
@@ -484,11 +484,11 @@ prompt --version
 
 Once you're set up:
 
-1. **Explore captured prompts**: `prompt list`
-2. **Review conversation history**: `prompt history <prompt-id>`
-3. **Compare versions**: `prompt diff <prompt-id>`
+1. **Explore captured prompts**: `gitify-prompt list`
+2. **Review conversation history**: `gitify-prompt history <prompt-id>`
+3. **Compare versions**: `gitify-prompt diff <prompt-id>`
 4. **Share with team**: Commit `.prompts/` to git
-5. **Run tests**: `prompt test` (see README.md for test setup)
+5. **Run tests**: `gitify-prompt test` (see README.md for test setup)
 
 ---
 

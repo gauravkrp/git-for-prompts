@@ -1,6 +1,6 @@
 # Publishing to npm
 
-This guide covers how to publish Git for Prompts to npm so users can install with `npm install -g git-for-prompts`.
+This guide covers how to publish Git for Prompts to npm so users can install with `npm install -g gitify-prompt`.
 
 ## Prerequisites
 
@@ -48,12 +48,12 @@ npm run build
 
 # Test linking
 npm link
-prompt --version
+gitify-prompt --version
 
 # Test in another directory
 cd /tmp
-prompt init
-prompt daemon status
+gitify-prompt init
+gitify-prompt daemon status
 
 # Unlink
 npm unlink -g git-for-prompts
@@ -162,7 +162,7 @@ Remove the "not yet published" warning:
 ## Installation
 
 ```bash
-npm install -g git-for-prompts
+npm install -g gitify-prompt
 ```
 ```
 
@@ -179,7 +179,7 @@ npm install && npm run build && npm link
 
 **After:**
 ```bash
-npm install -g git-for-prompts
+npm install -g gitify-prompt
 ```
 
 ### 3. Create GitHub Release
@@ -334,8 +334,8 @@ npm pack --dry-run
 ## Post-Publish Checklist
 
 - [ ] Package appears on https://www.npmjs.com/package/git-for-prompts
-- [ ] `npm install -g git-for-prompts` works
-- [ ] `prompt --version` shows correct version
+- [ ] `npm install -g gitify-prompt` works
+- [ ] `gitify-prompt --version` shows correct version
 - [ ] README updated on npm page
 - [ ] GitHub release created
 - [ ] Cursor extension published
@@ -374,4 +374,4 @@ npm publish
 
 ---
 
-**Once published, users can simply run `npm install -g git-for-prompts` and start using it immediately!**
+**Once published, users can simply run `npm install -g gitify-prompt` and start using it immediately!**

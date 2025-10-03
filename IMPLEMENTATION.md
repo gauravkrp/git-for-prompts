@@ -2,7 +2,7 @@
 
 ## What Was Built
 
-This implementation adds **automatic prompt capture** to Git for Prompts, eliminating the need for manual prompt commits. Now, all AI interactions with Claude Code and Cursor IDE are automatically captured and version controlled.
+This implementation adds **automatic prompt capture** to Git for Prompts, eliminating the need for manual gitify-prompt commits. Now, all AI interactions with Claude Code and Cursor IDE are automatically captured and version controlled.
 
 ## Architecture
 
@@ -118,18 +118,18 @@ When you run `git commit`, the post-commit hook automatically:
 
 ```bash
 # Daemon management
-prompt daemon start          # Start capturing
-prompt daemon status         # Check status
-prompt daemon config [opts]  # Configure settings
-prompt daemon install        # Install as service
+gitify-prompt daemon start          # Start capturing
+gitify-prompt daemon status         # Check status
+gitify-prompt daemon config [opts]  # Configure settings
+gitify-prompt daemon install        # Install as service
 
 # Existing commands still work
-prompt init                  # Initialize repo
-prompt commit <id>           # Manual commit
-prompt list                  # List prompts
-prompt history <id>          # View history
-prompt diff <id>             # Compare versions
-prompt test [id]             # Run tests
+gitify-prompt init                  # Initialize repo
+gitify-prompt commit <id>           # Manual commit
+gitify-prompt list                  # List prompts
+gitify-prompt history <id>          # View history
+gitify-prompt diff <id>             # Compare versions
+gitify-prompt test [id]             # Run tests
 ```
 
 ## Usage Flow
@@ -138,10 +138,10 @@ prompt test [id]             # Run tests
 
 ```bash
 # 1. Initialize (one-time)
-prompt init
+gitify-prompt init
 
 # 2. Start daemon (or install as service)
-prompt daemon start
+gitify-prompt daemon start
 
 # 3. Work normally - conversations auto-captured
 # ... use Claude Code as usual ...
@@ -191,9 +191,9 @@ npm install && npm run compile
 ### CLI Config
 
 ```bash
-prompt daemon config --enable-claude-code true
-prompt daemon config --enable-cursor true
-prompt daemon config --mask-sensitive true
+gitify-prompt daemon config --enable-claude-code true
+gitify-prompt daemon config --enable-cursor true
+gitify-prompt daemon config --mask-sensitive true
 ```
 
 ## Technical Implementation Details
@@ -302,10 +302,10 @@ These are potential future enhancements:
 
 The automation layer works seamlessly with existing features:
 
-- **`prompt list`** - Shows auto-captured prompts with `[auto-captured]` tag
-- **`prompt history`** - Includes auto-captured versions
-- **`prompt diff`** - Compare auto-captured versions
-- **`prompt test`** - Test auto-captured prompts
+- **`gitify-prompt list`** - Shows auto-captured prompts with `[auto-captured]` tag
+- **`gitify-prompt history`** - Includes auto-captured versions
+- **`gitify-prompt diff`** - Compare auto-captured versions
+- **`gitify-prompt test`** - Test auto-captured prompts
 
 ## Privacy Considerations
 
@@ -355,7 +355,7 @@ This implementation delivers on the core vision from TODO.md:
 ✅ **Frictionless capture** - 1-click, auto-capture
 ✅ **Git-native** - Treats prompts as first-class artifacts
 ✅ **IDE integration** - Cursor extension with inline capture
-✅ **CLI foundation** - `prompt daemon` commands
+✅ **CLI foundation** - `gitify-prompt daemon` commands
 ✅ **Developer-first** - Fits into existing workflows
 
 The automation layer transforms Git for Prompts from a manual tool into an **invisible, always-on system** that captures your AI workflow without you thinking about it.

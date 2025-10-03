@@ -1,4 +1,4 @@
-import { CaptureDaemon } from './capture-daemon.js';
+import { DaemonClient } from './daemon-server.js';
 import fs from 'fs-extra';
 import path from 'path';
 import os from 'os';
@@ -11,20 +11,20 @@ import os from 'os';
  * prompts when code changes are made.
  *
  * How it works:
- * 1. Hooks into Claude Code's message flow via environment variable detection
+ * 1. Connects to the persistent background daemon via DaemonClient
  * 2. Monitors conversation state and code changes
  * 3. Auto-commits prompts to .prompts/ when git commits are made
  *
  * @class ClaudeCodeIntegration
  */
 export class ClaudeCodeIntegration {
-  private daemon: CaptureDaemon;
+  private client: DaemonClient;
   private currentSessionId: string | null;
   private conversationBuffer: Array<{ role: 'user' | 'assistant'; content: string }>;
   private isActive: boolean;
 
-  constructor(daemon?: CaptureDaemon) {
-    this.daemon = daemon || new CaptureDaemon();
+  constructor() {
+    this.client = new DaemonClient();
     this.currentSessionId = null;
     this.conversationBuffer = [];
     this.isActive = false;
@@ -41,13 +41,17 @@ export class ClaudeCodeIntegration {
       return;
     }
 
+    // Check if daemon is running
+    const daemonRunning = await this.client.isRunning();
+    if (!daemonRunning) {
+      console.log('Daemon not running. Start it with: gitify-prompt daemon start');
+      return;
+    }
+
     console.log('Initializing Claude Code prompt capture...');
 
-    // Start the daemon if not already running
-    await this.daemon.start();
-
-    // Create a new session
-    this.currentSessionId = this.daemon.createSession('claude-code', {
+    // Create a new session via daemon client
+    this.currentSessionId = await this.client.createSession('claude-code', {
       cwd: process.cwd(),
       platform: process.platform,
       nodeVersion: process.version
@@ -118,19 +122,19 @@ export class ClaudeCodeIntegration {
   /**
    * Capture a user message
    */
-  captureUserMessage(content: string): void {
+  async captureUserMessage(content: string): Promise<void> {
     if (!this.isActive || !this.currentSessionId) {
       return;
     }
 
     this.conversationBuffer.push({ role: 'user', content });
-    this.daemon.addMessage(this.currentSessionId, 'user', content);
+    await this.client.addMessage(this.currentSessionId, 'user', content);
   }
 
   /**
    * Capture an assistant message
    */
-  private captureAssistantMessage(content: string): void {
+  private async captureAssistantMessage(content: string): Promise<void> {
     if (!this.isActive || !this.currentSessionId) {
       return;
     }
@@ -141,7 +145,7 @@ export class ClaudeCodeIntegration {
     }
 
     this.conversationBuffer.push({ role: 'assistant', content });
-    this.daemon.addMessage(this.currentSessionId, 'assistant', content);
+    await this.client.addMessage(this.currentSessionId, 'assistant', content);
   }
 
   /**
@@ -168,12 +172,12 @@ export class ClaudeCodeIntegration {
   /**
    * Capture a code change (file modification)
    */
-  captureCodeChange(filePath: string, beforeContent: string, afterContent: string): void {
+  async captureCodeChange(filePath: string, beforeContent: string, afterContent: string): Promise<void> {
     if (!this.isActive || !this.currentSessionId) {
       return;
     }
 
-    this.daemon.addCodeChange(this.currentSessionId, filePath, beforeContent, afterContent);
+    await this.client.addCodeChange(this.currentSessionId, filePath, beforeContent, afterContent);
   }
 
   /**
@@ -210,15 +214,12 @@ export class ClaudeCodeIntegration {
 
     console.log(`Capturing prompts for commit ${commitSha}...`);
 
-    // Get the current session
-    const session = this.daemon.getSession(this.currentSessionId);
-    if (session) {
-      await this.daemon.saveSession(session, commitSha);
-      console.log(`✓ Prompts captured and linked to commit ${commitSha}`);
-    }
+    // Save the current session
+    await this.client.saveSession(this.currentSessionId, commitSha);
+    console.log(`✓ Prompts captured and linked to commit ${commitSha}`);
 
     // Start a new session for the next round of changes
-    this.currentSessionId = this.daemon.createSession('claude-code', {
+    this.currentSessionId = await this.client.createSession('claude-code', {
       previousCommit: commitSha,
       cwd: process.cwd()
     });
@@ -236,21 +237,17 @@ export class ClaudeCodeIntegration {
 
     // Save current session if it has content
     if (this.currentSessionId) {
-      const session = this.daemon.getSession(this.currentSessionId);
-      if (session && session.messages.length > 0) {
-        await this.daemon.saveSession(session);
-      }
+      await this.client.saveSession(this.currentSessionId);
     }
 
     this.isActive = false;
-    await this.daemon.stop();
   }
 
   /**
-   * Get the active daemon instance
+   * Get the daemon client instance
    */
-  getDaemon(): CaptureDaemon {
-    return this.daemon;
+  getClient(): DaemonClient {
+    return this.client;
   }
 
   /**

@@ -1,132 +1,156 @@
 import chalk from 'chalk';
-import { CaptureDaemon } from '../lib/capture-daemon.js';
+import { startDaemonBackground, DaemonClient } from '../lib/daemon-server.js';
 import { PromptStore } from '../lib/prompt-store.js';
 import fs from 'fs-extra';
 import path from 'path';
+import os from 'os';
 
 /**
- * Start the capture daemon
+ * Start the capture daemon as a background process
  */
 export async function startDaemon() {
-  const store = new PromptStore();
+  console.log(chalk.cyan('Starting gitify-prompt daemon...'));
 
-  if (!await store.exists()) {
-    console.error(chalk.red('No prompts repository found. Run "prompt init" first.'));
-    process.exit(1);
+  const client = new DaemonClient();
+
+  // Check if already running
+  if (await client.isRunning()) {
+    console.log(chalk.yellow('⚠ Daemon is already running'));
+    console.log(chalk.gray('\nUse "gitify-prompt daemon status" to check status'));
+    console.log(chalk.gray('Use "gitify-prompt daemon stop" to stop it'));
+    return;
   }
 
-  const daemon = new CaptureDaemon();
+  try {
+    // Start daemon as detached background process
+    await startDaemonBackground();
 
-  console.log(chalk.cyan('Starting Git for Prompts daemon...'));
+    // Wait a bit for daemon to fully start
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
-  // Setup event listeners
-  daemon.on('started', () => {
-    console.log(chalk.green('✓ Daemon started'));
-    console.log(chalk.gray('  Watching for AI tool activity...'));
-  });
-
-  daemon.on('session-created', (session) => {
-    console.log(chalk.blue(`→ New session: ${session.id} (${session.tool})`));
-  });
-
-  daemon.on('session-saved', (sessionId, promptId) => {
-    console.log(chalk.green(`✓ Session saved: ${sessionId} → ${promptId}`));
-  });
-
-  daemon.on('error', (error) => {
-    console.error(chalk.red(`✗ Error: ${error.message}`));
-  });
-
-  daemon.on('log', (message) => {
-    console.log(chalk.gray(`  ${message}`));
-  });
-
-  await daemon.start();
-
-  // Keep process alive
-  console.log(chalk.yellow('\nPress Ctrl+C to stop the daemon'));
-
-  process.on('SIGINT', async () => {
-    console.log(chalk.cyan('\n\nStopping daemon...'));
-    await daemon.stop();
-    console.log(chalk.green('✓ Daemon stopped'));
-    process.exit(0);
-  });
+    // Verify it started
+    if (await client.isRunning()) {
+      console.log(chalk.green('✓ Daemon started successfully'));
+      console.log(chalk.gray('\nThe daemon is now running in the background.'));
+      console.log(chalk.gray('It will continue running even if you close this terminal.'));
+      console.log(chalk.gray('\nCommands:'));
+      console.log(chalk.gray('  gitify-prompt daemon status  - Check daemon status'));
+      console.log(chalk.gray('  gitify-prompt daemon stop    - Stop the daemon'));
+      console.log(chalk.gray('\nLogs: ' + path.join(os.tmpdir(), 'gitify-prompt', 'daemon.log')));
+    } else {
+      throw new Error('Daemon failed to start');
+    }
+  } catch (error) {
+    console.error(chalk.red(`✗ Failed to start daemon: ${error.message}`));
+    process.exit(1);
+  }
 }
 
 /**
  * Show daemon status
  */
 export async function daemonStatus() {
-  const daemon = new CaptureDaemon();
-  const sessions = daemon.getActiveSessions();
-  const config = daemon.getConfig();
+  const client = new DaemonClient();
 
   console.log(chalk.bold.cyan('Daemon Status\n'));
 
-  console.log(chalk.yellow('Configuration:'));
-  console.log(`  Auto-capture: ${config.autoCapture.enabled ? chalk.green('enabled') : chalk.red('disabled')}`);
-  console.log(`  Tools:`);
-  console.log(`    - Claude Code: ${config.autoCapture.tools['claude-code'] ? chalk.green('✓') : chalk.gray('✗')}`);
-  console.log(`    - Cursor: ${config.autoCapture.tools.cursor ? chalk.green('✓') : chalk.gray('✗')}`);
-  console.log(`    - ChatGPT: ${config.autoCapture.tools.chatgpt ? chalk.green('✓') : chalk.gray('✗')}`);
+  // Check if daemon is running
+  const isRunning = await client.isRunning();
 
-  console.log(chalk.yellow('\nActive Sessions:'));
-  if (sessions.length === 0) {
-    console.log(chalk.gray('  No active sessions'));
-  } else {
-    for (const session of sessions) {
-      console.log(chalk.blue(`  ${session.id}`));
-      console.log(chalk.gray(`    Tool: ${session.tool}`));
-      console.log(chalk.gray(`    Messages: ${session.messages.length}`));
-      console.log(chalk.gray(`    Code changes: ${session.codeChanges.length}`));
-      console.log(chalk.gray(`    Started: ${session.startTime.toLocaleString()}`));
-    }
+  if (!isRunning) {
+    console.log(chalk.red('✗ Daemon is not running'));
+    console.log(chalk.gray('\nStart it with: gitify-prompt daemon start'));
+    return;
   }
 
-  console.log(chalk.yellow('\nPrivacy Settings:'));
-  console.log(`  Mask sensitive data: ${config.privacy.maskSensitiveData ? chalk.green('yes') : chalk.red('no')}`);
-  console.log(`  Exclude patterns: ${config.privacy.excludePatterns.join(', ')}`);
+  console.log(chalk.green('✓ Daemon is running'));
+
+  try {
+    const status = await client.getStatus();
+    const config = status.config;
+
+    console.log(chalk.yellow('\nConfiguration:'));
+    console.log(`  Auto-capture: ${config.autoCapture.enabled ? chalk.green('enabled') : chalk.red('disabled')}`);
+    console.log(`  Tools:`);
+    console.log(`    - Claude Code: ${config.autoCapture.tools['claude-code'] ? chalk.green('✓') : chalk.gray('✗')}`);
+    console.log(`    - Cursor: ${config.autoCapture.tools.cursor ? chalk.green('✓') : chalk.gray('✗')}`);
+    console.log(`    - ChatGPT: ${config.autoCapture.tools.chatgpt ? chalk.green('✓') : chalk.gray('✗')}`);
+
+    console.log(chalk.yellow('\nActive Sessions:'));
+    if (status.activeSessions === 0) {
+      console.log(chalk.gray('  No active sessions'));
+    } else {
+      const sessions = await client.getActiveSessions();
+      for (const session of sessions) {
+        console.log(chalk.blue(`  ${session.id}`));
+        console.log(chalk.gray(`    Tool: ${session.tool}`));
+        console.log(chalk.gray(`    Messages: ${session.messages.length}`));
+        console.log(chalk.gray(`    Code changes: ${session.codeChanges.length}`));
+        console.log(chalk.gray(`    Started: ${new Date(session.startTime).toLocaleString()}`));
+      }
+    }
+
+    console.log(chalk.yellow('\nPrivacy Settings:'));
+    console.log(`  Mask sensitive data: ${config.privacy.maskSensitiveData ? chalk.green('yes') : chalk.red('no')}`);
+    console.log(`  Exclude patterns: ${config.privacy.excludePatterns.join(', ')}`);
+
+    console.log(chalk.yellow('\nLocations:'));
+    const runtimeDir = path.join(os.tmpdir(), 'gitify-prompt');
+    console.log(chalk.gray(`  Socket: ${path.join(runtimeDir, 'daemon.sock')}`));
+    console.log(chalk.gray(`  PID: ${path.join(runtimeDir, 'daemon.pid')}`));
+    console.log(chalk.gray(`  Log: ${path.join(runtimeDir, 'daemon.log')}`));
+
+  } catch (error) {
+    console.error(chalk.red(`✗ Error getting status: ${error.message}`));
+  }
+}
+
+/**
+ * Stop the daemon
+ */
+export async function stopDaemon() {
+  const client = new DaemonClient();
+
+  console.log(chalk.cyan('Stopping daemon...'));
+
+  const isRunning = await client.isRunning();
+
+  if (!isRunning) {
+    console.log(chalk.yellow('⚠ Daemon is not running'));
+    return;
+  }
+
+  try {
+    // Read PID and kill process
+    const pidPath = path.join(os.tmpdir(), 'gitify-prompt', 'daemon.pid');
+
+    if (await fs.pathExists(pidPath)) {
+      const pid = parseInt(await fs.readFile(pidPath, 'utf-8'));
+      process.kill(pid, 'SIGTERM');
+
+      // Wait for process to exit
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      console.log(chalk.green('✓ Daemon stopped'));
+    } else {
+      console.log(chalk.yellow('⚠ Could not find daemon PID file'));
+    }
+  } catch (error) {
+    console.error(chalk.red(`✗ Failed to stop daemon: ${error.message}`));
+  }
 }
 
 /**
  * Configure daemon settings
  */
 export async function configureDaemon(options: any) {
-  const daemon = new CaptureDaemon();
-  const currentConfig = daemon.getConfig();
+  console.log(chalk.yellow('⚠ Configuration via daemon is not yet implemented'));
+  console.log(chalk.gray('\nTo configure, edit ~/.promptrc.json manually'));
+  console.log(chalk.gray('Then restart the daemon: gitify-prompt daemon stop && gitify-prompt daemon start'));
 
-  console.log(chalk.cyan('Configuring daemon...\n'));
-
-  // Update configuration based on options
-  const newConfig: any = { ...currentConfig };
-
-  if (options.enableAutoCapture !== undefined) {
-    newConfig.autoCapture.enabled = options.enableAutoCapture;
-  }
-
-  if (options.enableClaudeCode !== undefined) {
-    newConfig.autoCapture.tools['claude-code'] = options.enableClaudeCode;
-  }
-
-  if (options.enableCursor !== undefined) {
-    newConfig.autoCapture.tools.cursor = options.enableCursor;
-  }
-
-  if (options.enableChatGpt !== undefined) {
-    newConfig.autoCapture.tools.chatgpt = options.enableChatGpt;
-  }
-
-  if (options.maskSensitive !== undefined) {
-    newConfig.privacy.maskSensitiveData = options.maskSensitive;
-  }
-
-  // Save configuration
-  await daemon.saveConfig(newConfig);
-
-  console.log(chalk.green('✓ Configuration saved'));
-  console.log(chalk.gray('\nCurrent settings:'));
-  console.log(JSON.stringify(newConfig, null, 2));
+  // TODO: Implement config updates via daemon client
+  // const client = new DaemonClient();
+  // await client.updateConfig(newConfig);
 }
 
 /**

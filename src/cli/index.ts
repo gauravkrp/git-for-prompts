@@ -8,7 +8,7 @@ import { historyCommand } from '../commands/history.js';
 import { testCommand } from '../commands/test.js';
 import { initCommand } from '../commands/init.js';
 import { listCommand } from '../commands/list.js';
-import { startDaemon, daemonStatus, configureDaemon, installDaemonService } from '../commands/daemon.js';
+import { startDaemon, daemonStatus, stopDaemon, configureDaemon, installDaemonService } from '../commands/daemon.js';
 
 const program = new Command();
 
@@ -67,8 +67,13 @@ const daemonCmd = program
 
 daemonCmd
   .command('start')
-  .description('Start the capture daemon')
+  .description('Start the capture daemon in background')
   .action(startDaemon);
+
+daemonCmd
+  .command('stop')
+  .description('Stop the running daemon')
+  .action(stopDaemon);
 
 daemonCmd
   .command('status')

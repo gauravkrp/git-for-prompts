@@ -8,6 +8,7 @@ import { historyCommand } from '../commands/history.js';
 import { testCommand } from '../commands/test.js';
 import { initCommand } from '../commands/init.js';
 import { listCommand } from '../commands/list.js';
+import { startDaemon, daemonStatus, configureDaemon, installDaemonService } from '../commands/daemon.js';
 
 const program = new Command();
 
@@ -58,6 +59,36 @@ program
   .option('--tags <tags>', 'Filter by tags')
   .option('--model <model>', 'Filter by model')
   .action(listCommand);
+
+// Daemon commands
+const daemonCmd = program
+  .command('daemon')
+  .description('Manage the auto-capture daemon');
+
+daemonCmd
+  .command('start')
+  .description('Start the capture daemon')
+  .action(startDaemon);
+
+daemonCmd
+  .command('status')
+  .description('Show daemon status and active sessions')
+  .action(daemonStatus);
+
+daemonCmd
+  .command('config')
+  .description('Configure daemon settings')
+  .option('--enable-auto-capture <boolean>', 'Enable/disable auto-capture')
+  .option('--enable-claude-code <boolean>', 'Enable/disable Claude Code integration')
+  .option('--enable-cursor <boolean>', 'Enable/disable Cursor integration')
+  .option('--enable-chatgpt <boolean>', 'Enable/disable ChatGPT integration')
+  .option('--mask-sensitive <boolean>', 'Enable/disable sensitive data masking')
+  .action(configureDaemon);
+
+daemonCmd
+  .command('install')
+  .description('Install daemon as a system service')
+  .action(installDaemonService);
 
 program.parse(process.argv);
 

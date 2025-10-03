@@ -1,0 +1,103 @@
+{
+  "name": "cursor-prompts",
+  "displayName": "Cursor Prompts - Git for Prompts",
+  "description": "Automatically capture and version Cursor AI prompts",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursor-prompts.savePrompt",
+        "title": "Save Prompt to Repository",
+        "category": "Cursor Prompts"
+      },
+      {
+        "command": "cursor-prompts.viewHistory",
+        "title": "View Prompt History",
+        "category": "Cursor Prompts"
+      },
+      {
+        "command": "cursor-prompts.toggleAutoCapture",
+        "title": "Toggle Auto-Capture",
+        "category": "Cursor Prompts"
+      },
+      {
+        "command": "cursor-prompts.showActiveSessions",
+        "title": "Show Active Prompt Sessions",
+        "category": "Cursor Prompts"
+      }
+    ],
+    "menus": {
+      "editor/context": [
+        {
+          "command": "cursor-prompts.savePrompt",
+          "group": "cursor-prompts",
+          "when": "editorTextFocus"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cursor-prompts.savePrompt"
+        },
+        {
+          "command": "cursor-prompts.viewHistory"
+        },
+        {
+          "command": "cursor-prompts.toggleAutoCapture"
+        },
+        {
+          "command": "cursor-prompts.showActiveSessions"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Cursor Prompts",
+      "properties": {
+        "cursor-prompts.autoCapture": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically capture Cursor AI prompts"
+        },
+        "cursor-prompts.captureCodeChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture code changes along with prompts"
+        },
+        "cursor-prompts.linkToGitCommits": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically link prompts to Git commits"
+        },
+        "cursor-prompts.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when prompts are captured"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "git-for-prompts": "file:.."
+  }
+}

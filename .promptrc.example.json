@@ -1,0 +1,35 @@
+{
+  "autoCapture": {
+    "enabled": true,
+    "tools": {
+      "claude-code": true,
+      "cursor": true,
+      "chatgpt": false,
+      "generic": true
+    }
+  },
+  "privacy": {
+    "excludePatterns": [
+      "*.env",
+      "*secret*",
+      "*password*",
+      "*api*key*",
+      "*.pem",
+      "*.key",
+      "*credentials*"
+    ],
+    "maskSensitiveData": true
+  },
+  "storage": {
+    "maxSessionAge": 86400000,
+    "autoCleanup": true
+  },
+  "git": {
+    "autoCommitOnGitCommit": true,
+    "linkToCommits": true
+  },
+  "notifications": {
+    "showOnCapture": true,
+    "showOnSave": true
+  }
+}

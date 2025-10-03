@@ -4,26 +4,71 @@
 
 Git for Prompts brings software engineering best practices to prompt engineering. Version your prompts, review changes in pull requests, and run regression tests in CI/CD pipelines.
 
+## ✨ New: Automatic Prompt Capture
+
+**Never manually save prompts again!** Git for Prompts now automatically captures all AI interactions from Claude Code and Cursor IDE. Every conversation is captured, version-controlled, and linked to your git commits.
+
+[**📖 See the Automation Guide →**](AUTOMATION.md)
+
 ## Features
 
-- **CLI for prompt management** - Commit, diff, and track prompt history
-- **Side-by-side diff** - Compare old vs new prompt outputs
-- **PR-style review workflow** - Review prompt changes before deployment
-- **CI integration** - Run prompts against test suites automatically
-- **Multi-model support** - Test across GPT, Claude, and local models
-- **VS Code extension** - Save and test prompts directly from your editor
+- **🤖 Automatic Capture** - Auto-capture prompts from Claude Code and Cursor IDE
+- **🔗 Git Integration** - Automatically link prompts to git commits
+- **📝 CLI for prompt management** - Commit, diff, and track prompt history
+- **📊 Side-by-side diff** - Compare old vs new prompt outputs
+- **👥 PR-style review workflow** - Review prompt changes before deployment
+- **🔄 CI integration** - Run prompts against test suites automatically
+- **🎯 Multi-model support** - Test across GPT, Claude, and local models
+- **🔌 VS Code/Cursor extension** - Auto-capture with zero configuration
 
 ## Quick Start
 
-### Installation
+### Option 1: Automatic Capture (Recommended)
 
+**For Claude Code Terminal:**
 ```bash
+# 1. Install
 npm install -g git-for-prompts
+
+# 2. Initialize in your project
+cd your-project
+prompt init
+
+# 3. Start auto-capture daemon
+prompt daemon start
+
+# 4. Work normally - prompts are captured automatically!
+# When you commit, prompts are auto-saved and linked
+git commit -m "Your changes"
+# ✓ Prompts automatically captured and linked to commit
 ```
 
-### Initialize a prompts repository
+**For Cursor IDE:**
+```bash
+# 1. Install Git for Prompts CLI
+npm install -g git-for-prompts
+
+# 2. Initialize in your project
+cd your-project
+prompt init
+
+# 3. Install Cursor extension
+cd cursor-extension
+npm install && npm run compile
+# Then install in Cursor (F5 to debug or build .vsix)
+
+# 4. Extension auto-starts and captures everything!
+```
+
+[**📖 Full Automation Setup Guide →**](AUTOMATION.md)
+
+### Option 2: Manual Workflow
 
 ```bash
+# Install
+npm install -g git-for-prompts
+
+# Initialize a prompts repository
 prompt init
 ```
 
@@ -36,7 +81,24 @@ This creates a `.prompts/` directory with the following structure:
 └── history/          # Version history
 ```
 
-### Add your first prompt
+### Daemon Commands (Auto-Capture)
+
+```bash
+# Start the capture daemon
+prompt daemon start
+
+# Check daemon status and active sessions
+prompt daemon status
+
+# Configure auto-capture settings
+prompt daemon config --enable-claude-code true
+prompt daemon config --enable-cursor true
+
+# Install as system service (optional)
+prompt daemon install
+```
+
+### Manual Prompt Commands
 
 ```bash
 # Interactive mode
@@ -300,8 +362,23 @@ src/
     └── llm-runner.js     # LLM integration
 ```
 
+## What's New in v0.1.0
+
+✅ **Automatic prompt capture** for Claude Code and Cursor IDE
+✅ **Background daemon** for zero-friction capture
+✅ **Git commit linking** - prompts automatically linked to commits
+✅ **Cursor extension** with status bar integration
+✅ **Privacy controls** - sensitive data masking and exclusion patterns
+✅ **Configurable** - per-tool enablement and settings
+
+[See Implementation Details →](IMPLEMENTATION.md)
+
 ## Roadmap
 
+- [x] Automatic capture for Claude Code
+- [x] Automatic capture for Cursor IDE
+- [x] Git commit linking
+- [ ] Browser extension for ChatGPT/Claude web
 - [ ] Support for Anthropic Claude models
 - [ ] Local LLM support (Ollama, LMStudio)
 - [ ] Web dashboard for team collaboration

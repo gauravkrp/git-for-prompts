@@ -21,17 +21,40 @@ Git for Prompts brings software engineering best practices to prompt engineering
 - **🎯 Multi-model support** - Test across GPT, Claude, and local models
 - **🔌 VS Code/Cursor extension** - Auto-capture with zero configuration
 
+## Installation
+
+**⚠️ This package is not yet published to npm. Install from source:**
+
+```bash
+# Clone the repository
+git clone https://github.com/gauravkrp/git-for-prompts.git
+cd git-for-prompts
+
+# Install, build, and link globally
+npm install
+npm run build
+npm link
+
+# Verify installation
+prompt --version
+```
+
+Now the `prompt` command is available globally! 🎉
+
+[**📖 Detailed Installation Guide →**](GETTING-STARTED.md)
+
+---
+
 ## Quick Start
 
 ### Option 1: Automatic Capture (Recommended)
 
 **For Claude Code Terminal:**
 ```bash
-# 1. Install
-npm install -g git-for-prompts
-
-# 2. Initialize in your project
+# 1. Go to your project
 cd your-project
+
+# 2. Initialize Git for Prompts
 prompt init
 
 # 3. Start auto-capture daemon
@@ -45,22 +68,19 @@ git commit -m "Your changes"
 
 **For Cursor IDE:**
 ```bash
-# 1. Install Git for Prompts CLI
-npm install -g git-for-prompts
-
-# 2. Initialize in your project
+# 1. Initialize in your project
 cd your-project
 prompt init
 
-# 3. Install Cursor extension
-cd cursor-extension
+# 2. Install Cursor extension
+cd /path/to/git-for-prompts/cursor-extension
 npm install && npm run compile
 # Then install in Cursor (F5 to debug or build .vsix)
 
-# 4. Extension auto-starts and captures everything!
+# 3. Extension auto-starts and captures everything!
 ```
 
-[**📖 Full Automation Setup Guide →**](AUTOMATION.md)
+[**📖 Full Setup Guide for New Users →**](GETTING-STARTED.md)
 
 ### Option 2: Manual Workflow
 

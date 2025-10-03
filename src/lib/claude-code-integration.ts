@@ -51,8 +51,10 @@ export class ClaudeCodeIntegration {
     console.log('Initializing Claude Code prompt capture...');
 
     // Create a new session via daemon client
+    // Always tag with repo path for multi-repo support
     this.currentSessionId = await this.client.createSession('claude-code', {
       cwd: process.cwd(),
+      repoPath: process.cwd(), // Used for filtering sessions by repo
       platform: process.platform,
       nodeVersion: process.version
     });
@@ -208,21 +210,28 @@ export class ClaudeCodeIntegration {
    * This is called by the git post-commit hook
    */
   async onGitCommit(commitSha: string): Promise<void> {
-    if (!this.isActive || !this.currentSessionId) {
-      return;
-    }
-
     console.log(`Capturing prompts for commit ${commitSha}...`);
 
-    // Save the current session
-    await this.client.saveSession(this.currentSessionId, commitSha);
-    console.log(`✓ Prompts captured and linked to commit ${commitSha}`);
+    const repoPath = process.cwd();
+
+    // Save ALL sessions for THIS repo (not just current session)
+    // This handles multiple IDE instances working on same repo
+    const sessionsSaved = await this.client.saveSessionsForRepo(repoPath, commitSha);
+
+    if (sessionsSaved > 0) {
+      console.log(`✓ Captured ${sessionsSaved} session(s) for commit ${commitSha}`);
+    } else {
+      console.log(`ℹ No active sessions to capture for this repo`);
+    }
 
     // Start a new session for the next round of changes
-    this.currentSessionId = await this.client.createSession('claude-code', {
-      previousCommit: commitSha,
-      cwd: process.cwd()
-    });
+    if (this.isActive) {
+      this.currentSessionId = await this.client.createSession('claude-code', {
+        previousCommit: commitSha,
+        cwd: process.cwd(),
+        repoPath: process.cwd()
+      });
+    }
   }
 
   /**

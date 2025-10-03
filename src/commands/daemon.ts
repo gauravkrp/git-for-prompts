@@ -80,10 +80,27 @@ export async function daemonStatus() {
     if (status.activeSessions === 0) {
       console.log(chalk.gray('  No active sessions'));
     } else {
+      console.log(chalk.gray(`  Total: ${status.activeSessions} session(s)`));
+
+      // Show sessions grouped by repo
+      if (status.sessionsByRepo) {
+        console.log(chalk.yellow('\nSessions by Repository:'));
+        for (const [repo, count] of Object.entries(status.sessionsByRepo)) {
+          const shortPath = repo.replace(os.homedir(), '~');
+          console.log(chalk.blue(`  ${shortPath}`));
+          console.log(chalk.gray(`    ${count} active session(s)`));
+        }
+      }
+
+      // Show details
+      console.log(chalk.yellow('\nSession Details:'));
       const sessions = await client.getActiveSessions();
       for (const session of sessions) {
-        console.log(chalk.blue(`  ${session.id}`));
+        const repo = session.metadata?.repoPath || session.metadata?.cwd || 'unknown';
+        const shortRepo = repo.replace(os.homedir(), '~');
+        console.log(chalk.blue(`  ${session.id.substring(0, 8)}`));
         console.log(chalk.gray(`    Tool: ${session.tool}`));
+        console.log(chalk.gray(`    Repo: ${shortRepo}`));
         console.log(chalk.gray(`    Messages: ${session.messages.length}`));
         console.log(chalk.gray(`    Code changes: ${session.codeChanges.length}`));
         console.log(chalk.gray(`    Started: ${new Date(session.startTime).toLocaleString()}`));

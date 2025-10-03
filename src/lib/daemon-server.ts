@@ -130,16 +130,57 @@ export class DaemonServer {
         }
         return { success: true };
 
+      case 'saveSessionsForRepo':
+        // Save all sessions for a specific repo
+        const repoPath = args.repoPath;
+        const commitSha = args.commitSha;
+        const sessionsForRepo = this.daemon.getActiveSessions();
+
+        // Filter sessions that belong to this repo
+        const repoSessions = sessionsForRepo.filter(s =>
+          s.metadata.cwd === repoPath ||
+          s.metadata.repoPath === repoPath
+        );
+
+        this.log(`Saving ${repoSessions.length} sessions for repo ${repoPath}`);
+
+        for (const session of repoSessions) {
+          await this.daemon.saveSession(session, commitSha);
+        }
+
+        return {
+          success: true,
+          sessionsSaved: repoSessions.length
+        };
+
       case 'getActiveSessions':
-        return { sessions: this.daemon.getActiveSessions() };
+        // Optionally filter by repo
+        let sessions = this.daemon.getActiveSessions();
+        if (args.repoPath) {
+          sessions = sessions.filter(s =>
+            s.metadata.cwd === args.repoPath ||
+            s.metadata.repoPath === args.repoPath
+          );
+        }
+        return { sessions };
 
       case 'getConfig':
         return { config: this.daemon.getConfig() };
 
       case 'status':
+        const allSessions = this.daemon.getActiveSessions();
+
+        // Group sessions by repo
+        const sessionsByRepo: Record<string, number> = {};
+        allSessions.forEach(s => {
+          const repo = s.metadata.cwd || s.metadata.repoPath || 'unknown';
+          sessionsByRepo[repo] = (sessionsByRepo[repo] || 0) + 1;
+        });
+
         return {
           running: true,
-          activeSessions: this.daemon.getActiveSessions().length,
+          activeSessions: allSessions.length,
+          sessionsByRepo,
           config: this.daemon.getConfig()
         };
 
@@ -352,10 +393,18 @@ export class DaemonClient {
   }
 
   /**
-   * Get active sessions
+   * Save all sessions for a specific repo
    */
-  async getActiveSessions(): Promise<any[]> {
-    const result = await this.send('getActiveSessions');
+  async saveSessionsForRepo(repoPath: string, commitSha: string): Promise<number> {
+    const result = await this.send('saveSessionsForRepo', { repoPath, commitSha });
+    return result.sessionsSaved;
+  }
+
+  /**
+   * Get active sessions (optionally filter by repo)
+   */
+  async getActiveSessions(repoPath?: string): Promise<any[]> {
+    const result = await this.send('getActiveSessions', { repoPath });
     return result.sessions;
   }
 

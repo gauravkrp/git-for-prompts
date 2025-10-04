@@ -161,6 +161,179 @@ function captureFileChange(filePath: string, newContent: any) {
     // Add to session
     daemon.addCodeChange(currentSessionId, absolutePath, oldContent, newContentStr);
 
+    // Save session state immediately (don't wait for exit)
+    // This ensures session is captured even if Claude is still running when you commit
+    saveSessionState();
+
+  } catch (error) {
+    // Silent fail
+  }
+}
+
+/**
+ * Find and parse the Claude Code conversation history for this session
+ * Matches based on session start time to ensure we get the right conversation
+ */
+function getConversationHistory(sessionStartTime: string): any[] {
+  try {
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+    if (!homeDir) return [];
+
+    // Encode the project path the same way Claude Code does
+    // Format: -Users-gaurav-dev-thera-fe
+    const cwd = process.cwd();
+    const encodedPath = cwd.replace(/\//g, '-');
+
+    const projectDir = path.join(homeDir, '.claude', 'projects', encodedPath);
+
+    if (!fs.existsSync(projectDir)) {
+      return [];
+    }
+
+    // Convert session start time to timestamp for comparison
+    const sessionStartMs = new Date(sessionStartTime).getTime();
+    const sessionStartBuffer = 60000; // 1 minute buffer before session start
+
+    // Find all conversation files
+    const files = fs.readdirSync(projectDir)
+      .filter(f => f.endsWith('.jsonl'))
+      .map(f => path.join(projectDir, f));
+
+    // Check each conversation file to find the one that contains our session
+    let matchedMessages: any[] = [];
+    let bestMatch: { file: string; messages: any[]; score: number } | null = null;
+
+    for (const conversationFile of files) {
+      try {
+        const content = fs.readFileSync(conversationFile, 'utf-8');
+        const lines = content.trim().split('\n');
+        const messages: any[] = [];
+        let hasMessagesInTimeRange = false;
+
+        for (const line of lines) {
+          try {
+            const entry = JSON.parse(line);
+            const entryTimestamp = entry.timestamp ? new Date(entry.timestamp).getTime() : 0;
+
+            // Check if this message is within our session timeframe AND matches the project path
+            const entryMatchesProject = !entry.cwd || entry.cwd === cwd;
+            if (entryTimestamp >= sessionStartMs - sessionStartBuffer && entryMatchesProject) {
+              hasMessagesInTimeRange = true;
+
+              // Extract user and assistant messages
+              if (entry.type === 'user' && entry.message?.content) {
+                messages.push({
+                  role: 'user',
+                  content: typeof entry.message.content === 'string'
+                    ? entry.message.content
+                    : JSON.stringify(entry.message.content),
+                  timestamp: entry.timestamp
+                });
+              } else if (entry.type === 'assistant' && entry.message?.content) {
+                // Extract text content from assistant messages
+                const textContent = entry.message.content
+                  .filter((c: any) => c.type === 'text')
+                  .map((c: any) => c.text)
+                  .join('\n');
+
+                if (textContent) {
+                  messages.push({
+                    role: 'assistant',
+                    content: textContent,
+                    timestamp: entry.timestamp
+                  });
+                }
+              }
+            }
+          } catch (parseError) {
+            // Skip invalid lines
+          }
+        }
+
+        // Score this conversation based on how well it matches
+        if (hasMessagesInTimeRange && messages.length > 0) {
+          const score = messages.length; // Simple scoring: more messages = better match
+          if (!bestMatch || score > bestMatch.score) {
+            bestMatch = { file: conversationFile, messages, score };
+          }
+        }
+      } catch (error) {
+        // Skip files we can't read
+      }
+    }
+
+    return bestMatch ? bestMatch.messages : [];
+  } catch (error) {
+    console.error(`[gitify-prompt] Failed to read conversation history: ${error.message}`);
+    return [];
+  }
+}
+
+/**
+ * Get git author information
+ */
+function getGitAuthor(): { name: string; email: string } | null {
+  try {
+    const { execSync } = require('child_process');
+
+    const name = execSync('git config user.name', { encoding: 'utf-8' }).trim();
+    const email = execSync('git config user.email', { encoding: 'utf-8' }).trim();
+
+    return { name, email };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
+ * Save current session state
+ * Called both on file changes and on exit
+ */
+function saveSessionState() {
+  if (!daemon || !currentSessionId) return;
+
+  try {
+    const session = daemon.getSession(currentSessionId);
+    if (!session) return;
+
+    const metaDir = path.join(process.cwd(), '.prompts', '.meta');
+    const sessionFile = path.join(metaDir, `session-${session.id}.json`);
+
+    // Ensure .meta directory exists
+    if (!fs.existsSync(metaDir)) {
+      fs.mkdirSync(metaDir, { recursive: true });
+    }
+
+    // Get the conversation history from Claude Code's storage
+    const sessionStartStr = session.startTime instanceof Date
+      ? session.startTime.toISOString()
+      : session.startTime;
+    const conversationMessages = getConversationHistory(sessionStartStr);
+
+    // Get git author details
+    const gitAuthor = getGitAuthor();
+
+    // Format session for storage
+    const sessionData = {
+      id: session.id,
+      tool: session.tool,
+      startTime: session.startTime,
+      author: gitAuthor,
+      messages: conversationMessages,
+      filesModified: session.codeChanges.map(change => ({
+        file: change.filePath,
+        timestamp: change.timestamp
+      })),
+      metadata: {
+        ...session.metadata,
+        fileCount: session.codeChanges.length,
+        messageCount: conversationMessages.length,
+        lastUpdate: new Date().toISOString()
+      }
+    };
+
+    // Save session data
+    fs.writeFileSync(sessionFile, JSON.stringify(sessionData, null, 2));
   } catch (error) {
     // Silent fail
   }
@@ -168,7 +341,6 @@ function captureFileChange(filePath: string, newContent: any) {
 
 /**
  * Cleanup on process exit
- * Save session to a temp file for the git hook to pick up
  */
 function onExit() {
   if (!daemon || !currentSessionId) return;
@@ -176,34 +348,8 @@ function onExit() {
   try {
     const session = daemon.getSession(currentSessionId);
     if (session && session.codeChanges.length > 0) {
-      // Save session to temp file for git hook to pick up on commit
-      const metaDir = path.join(process.cwd(), '.prompts', '.meta');
-      const sessionFile = path.join(metaDir, 'last-session.json');
-
-      // Ensure .meta directory exists
-      if (!fs.existsSync(metaDir)) {
-        fs.mkdirSync(metaDir, { recursive: true });
-      }
-
-      // Format session for storage
-      const sessionData = {
-        id: session.id,
-        tool: session.tool,
-        startTime: session.startTime,
-        messages: session.messages,
-        codeChanges: session.codeChanges.map(change => ({
-          file: change.filePath,
-          beforeContent: change.beforeContent,
-          afterContent: change.afterContent,
-          timestamp: change.timestamp
-        })),
-        metadata: session.metadata
-      };
-
-      // Save as array (can have multiple sessions)
-      fs.writeFileSync(sessionFile, JSON.stringify([sessionData], null, 2));
-
-      console.error(`[gitify-prompt] Captured ${session.codeChanges.length} file changes (session saved)`);
+      saveSessionState();
+      console.error(`[gitify-prompt] Captured session with ${session.codeChanges.length} file changes`);
     }
   } catch (error) {
     console.error(`[gitify-prompt] Failed to save session: ${error.message}`);

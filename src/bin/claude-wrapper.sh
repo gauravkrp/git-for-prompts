@@ -12,17 +12,21 @@
 # Manual setup:
 #   alias claude='GITIFY_PROMPT_PATH=/path/to/gitify-prompt /path/to/claude-wrapper.sh'
 
-# Find the actual claude binary
-CLAUDE_BIN=$(which claude 2>/dev/null)
+# Find the actual claude binary (not the alias)
+# Use 'command -v' instead of 'which' to skip aliases
+unalias claude 2>/dev/null  # Temporarily remove alias in this subshell
 
-# If claude is not in PATH, try common locations
-if [ -z "$CLAUDE_BIN" ]; then
-  if [ -f "$HOME/.nvm/versions/node/$(node -v)/bin/claude" ]; then
-    CLAUDE_BIN="$HOME/.nvm/versions/node/$(node -v)/bin/claude"
-  elif [ -f "/usr/local/bin/claude" ]; then
-    CLAUDE_BIN="/usr/local/bin/claude"
-  else
-    echo "Error: claude command not found" >&2
+# Try common locations for the actual claude binary
+if [ -f "$HOME/.nvm/versions/node/$(node -v)/bin/claude" ]; then
+  CLAUDE_BIN="$HOME/.nvm/versions/node/$(node -v)/bin/claude"
+elif [ -f "/usr/local/bin/claude" ]; then
+  CLAUDE_BIN="/usr/local/bin/claude"
+else
+  # Try to find it in PATH (after removing alias)
+  CLAUDE_BIN=$(command -v claude 2>/dev/null)
+  if [ -z "$CLAUDE_BIN" ] || [ "$CLAUDE_BIN" = "$0" ]; then
+    echo "Error: claude binary not found" >&2
+    echo "Please install Claude Code from https://claude.ai/download" >&2
     exit 1
   fi
 fi
@@ -34,7 +38,8 @@ if [ -z "$GITIFY_PROMPT_PATH" ]; then
   if [ -n "$GITIFY_BIN" ]; then
     # Resolve symlinks to find actual installation
     GITIFY_PROMPT_PATH=$(dirname $(readlink -f "$GITIFY_BIN" 2>/dev/null || echo "$GITIFY_BIN"))
-    GITIFY_PROMPT_PATH=$(dirname "$GITIFY_PROMPT_PATH")  # Go up one level from bin/
+    GITIFY_PROMPT_PATH=$(dirname "$GITIFY_PROMPT_PATH")  # Go up one level from cli/ to dist/
+    GITIFY_PROMPT_PATH=$(dirname "$GITIFY_PROMPT_PATH")  # Go up one more level from dist/ to root
   else
     echo "Warning: gitify-prompt not found in PATH" >&2
     echo "Set GITIFY_PROMPT_PATH environment variable or install globally" >&2

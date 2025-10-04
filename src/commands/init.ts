@@ -42,65 +42,140 @@ export async function initCommand(options) {
 }
 
 async function installGitHooks() {
-  const gitHookPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
-
   // Check if .git directory exists
   if (!await fs.pathExists(path.join(process.cwd(), '.git'))) {
     console.log(chalk.yellow('\nWarning: Not a git repository. Git hooks will not be installed.'));
     return;
   }
 
-  const hookScript = `#!/bin/sh
-# Gitify Prompt - Auto-capture git hook
-# This hook saves captured Claude Code sessions to .prompts/ on commit
+  // Check if project uses Husky
+  const huskyDir = path.join(process.cwd(), '.husky');
+  const usesHusky = await fs.pathExists(huskyDir);
 
-# Get the commit SHA
+  if (usesHusky) {
+    await installHuskyHooks();
+  } else {
+    await installStandardGitHooks();
+  }
+}
+
+async function installStandardGitHooks() {
+  const preCommitPath = path.join(process.cwd(), '.git', 'hooks', 'pre-commit');
+  const postCommitPath = path.join(process.cwd(), '.git', 'hooks', 'post-commit');
+
+  const preCommitScript = `#!/bin/sh
+# Gitify Prompt - Pre-commit hook
+# Save sessions and add prompts to the commit
+
+node -e "
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+// Load all session files from .meta directory
+const metaDir = path.join(process.cwd(), '.prompts', '.meta');
+
+if (!fs.existsSync(metaDir)) {
+  process.exit(0);
+}
+
+// Find all session-*.json files
+const sessionFiles = fs.readdirSync(metaDir)
+  .filter(f => f.startsWith('session-') && f.endsWith('.json'))
+  .map(f => path.join(metaDir, f));
+
+if (sessionFiles.length === 0) {
+  process.exit(0);
+}
+
+// Save each session as a prompt (with pending SHA)
+const promptsDir = path.join(process.cwd(), '.prompts', 'prompts');
+if (!fs.existsSync(promptsDir)) {
+  fs.mkdirSync(promptsDir, { recursive: true });
+}
+
+const promptFiles = [];
+sessionFiles.forEach(sessionFile => {
+  try {
+    const session = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
+    const timestamp = Date.now();
+    const filename = \\\`\\\${timestamp}-pending.json\\\`;
+    const filePath = path.join(promptsDir, filename);
+
+    session.metadata.commitSha = 'pending';
+    fs.writeFileSync(filePath, JSON.stringify(session, null, 2));
+    promptFiles.push(filePath);
+  } catch (error) {
+    console.error(\\\`Warning: Failed to process \\\${path.basename(sessionFile)}: \\\${error.message}\\\`);
+  }
+});
+
+// Add prompt files to the staging area
+if (promptFiles.length > 0) {
+  try {
+    execSync('git add .prompts/prompts/*-pending.json', { stdio: 'ignore' });
+    console.error(\\\`[gitify-prompt] Added \\\${promptFiles.length} prompt(s) to commit\\\`);
+  } catch (error) {
+    console.error('[gitify-prompt] Warning: Could not add prompts to staging area');
+  }
+}
+" 2>/dev/null || true
+
+exit 0
+`;
+
+  const postCommitScript = `#!/bin/sh
+# Gitify Prompt - Post-commit hook
+# Update prompt files with actual commit SHA
+
 COMMIT_SHA=$(git rev-parse HEAD)
 
-# Find gitify-prompt installation
-GITIFY_BIN=$(which gitify-prompt 2>/dev/null)
-
-if [ -z "$GITIFY_BIN" ]; then
-  # Not in PATH, try local node_modules
-  if [ -f "./node_modules/.bin/gitify-prompt" ]; then
-    GITIFY_BIN="./node_modules/.bin/gitify-prompt"
-  elif [ -f "./dist/cli/index.js" ]; then
-    GITIFY_BIN="./dist/cli/index.js"
-  else
-    echo "Warning: gitify-prompt not found, skipping prompt capture" >&2
-    exit 0
-  fi
-fi
-
-# Run the capture hook (this saves sessions from the in-process daemon)
-# The hook module in claude-hook.ts already captured the session
-# We just need to save it now linked to this commit
 node -e "
 const fs = require('fs');
 const path = require('path');
 
-// Load the sessions from the last Claude invocation
-const sessionFile = path.join(process.cwd(), '.prompts', '.meta', 'last-session.json');
+const promptsDir = path.join(process.cwd(), '.prompts', 'prompts');
+const metaDir = path.join(process.cwd(), '.prompts', '.meta');
 
-if (fs.existsSync(sessionFile)) {
-  const sessions = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
+// Rename pending files with actual commit SHA
+if (fs.existsSync(promptsDir)) {
+  const pendingFiles = fs.readdirSync(promptsDir)
+    .filter(f => f.endsWith('-pending.json'))
+    .map(f => path.join(promptsDir, f));
 
-  // Save each session linked to this commit
-  sessions.forEach(session => {
-    const timestamp = Date.now();
-    const filename = \\\`\\\${timestamp}-$COMMIT_SHA.json\\\`;
-    const filePath = path.join(process.cwd(), '.prompts', 'prompts', filename);
+  pendingFiles.forEach(pendingFile => {
+    try {
+      // Read and update SHA
+      const content = JSON.parse(fs.readFileSync(pendingFile, 'utf-8'));
+      content.metadata.commitSha = '$COMMIT_SHA';
 
-    session.metadata.commitSha = '$COMMIT_SHA';
-    fs.writeFileSync(filePath, JSON.stringify(session, null, 2));
+      // Create new filename with commit SHA
+      const newFilename = path.basename(pendingFile).replace('-pending.json', '-$COMMIT_SHA.json');
+      const newPath = path.join(promptsDir, newFilename);
+
+      fs.writeFileSync(newPath, JSON.stringify(content, null, 2));
+      fs.unlinkSync(pendingFile);
+    } catch (error) {
+      console.error(\\\`Warning: Failed to update \\\${path.basename(pendingFile)}\\\`);
+    }
   });
 
-  // Clean up session file
-  fs.unlinkSync(sessionFile);
+  if (pendingFiles.length > 0) {
+    console.log(\\\`✓ Linked \\\${pendingFiles.length} prompt(s) to commit $COMMIT_SHA\\\`);
+  }
+}
 
-  console.log(\\\`✓ Captured \\\${sessions.length} session(s) for commit $COMMIT_SHA\\\`);
-} else {
-  console.log('ℹ No active sessions to capture for this commit');
+// Clean up session files
+if (fs.existsSync(metaDir)) {
+  const sessionFiles = fs.readdirSync(metaDir)
+    .filter(f => f.startsWith('session-') && f.endsWith('.json'))
+    .map(f => path.join(metaDir, f));
+
+  sessionFiles.forEach(f => {
+    try {
+      fs.unlinkSync(f);
+    } catch (e) {}
+  });
 }
 " 2>/dev/null || true
 
@@ -108,10 +183,135 @@ exit 0
 `;
 
   try {
-    await fs.writeFile(gitHookPath, hookScript, { mode: 0o755 });
-    console.log(chalk.green('✓ Git post-commit hook installed'));
+    await fs.writeFile(preCommitPath, preCommitScript, { mode: 0o755 });
+    await fs.writeFile(postCommitPath, postCommitScript, { mode: 0o755 });
+    console.log(chalk.green('✓ Git hooks installed (pre-commit + post-commit)'));
   } catch (error) {
-    console.log(chalk.yellow(`Warning: Failed to install git hook: ${error.message}`));
+    console.log(chalk.yellow(`Warning: Failed to install git hooks: ${error.message}`));
+  }
+}
+
+async function installHuskyHooks() {
+  const preCommitPath = path.join(process.cwd(), '.husky', 'pre-commit');
+  const postCommitPath = path.join(process.cwd(), '.husky', 'post-commit');
+
+  // Gitify prompt hook code (without shebang, will be appended)
+  const gitifyPreCommitCode = `
+# Gitify Prompt - Save sessions and add prompts to commit
+node -e "
+const fs = require('fs');
+const path = require('path');
+const { execSync } = require('child_process');
+
+const metaDir = path.join(process.cwd(), '.prompts', '.meta');
+if (!fs.existsSync(metaDir)) process.exit(0);
+
+const sessionFiles = fs.readdirSync(metaDir)
+  .filter(f => f.startsWith('session-') && f.endsWith('.json'))
+  .map(f => path.join(metaDir, f));
+
+if (sessionFiles.length === 0) process.exit(0);
+
+const promptsDir = path.join(process.cwd(), '.prompts', 'prompts');
+if (!fs.existsSync(promptsDir)) {
+  fs.mkdirSync(promptsDir, { recursive: true });
+}
+
+const promptFiles = [];
+sessionFiles.forEach(sessionFile => {
+  try {
+    const session = JSON.parse(fs.readFileSync(sessionFile, 'utf-8'));
+    const timestamp = Date.now();
+    const filename = \\\`\\\${timestamp}-pending.json\\\`;
+    const filePath = path.join(promptsDir, filename);
+    session.metadata.commitSha = 'pending';
+    fs.writeFileSync(filePath, JSON.stringify(session, null, 2));
+    promptFiles.push(filePath);
+  } catch (error) {}
+});
+
+if (promptFiles.length > 0) {
+  try {
+    execSync('git add .prompts/prompts/*-pending.json', { stdio: 'ignore' });
+    console.error(\\\`[gitify-prompt] Added \\\${promptFiles.length} prompt(s) to commit\\\`);
+  } catch (error) {}
+}
+" 2>/dev/null || true
+`;
+
+  const gitifyPostCommitCode = `#!/bin/sh
+# Gitify Prompt - Post-commit hook
+# Update prompt files with actual commit SHA
+
+COMMIT_SHA=$(git rev-parse HEAD)
+
+node -e "
+const fs = require('fs');
+const path = require('path');
+
+const promptsDir = path.join(process.cwd(), '.prompts', 'prompts');
+const metaDir = path.join(process.cwd(), '.prompts', '.meta');
+
+// Rename pending files with actual commit SHA
+if (fs.existsSync(promptsDir)) {
+  const pendingFiles = fs.readdirSync(promptsDir)
+    .filter(f => f.endsWith('-pending.json'))
+    .map(f => path.join(promptsDir, f));
+
+  pendingFiles.forEach(pendingFile => {
+    try {
+      const content = JSON.parse(fs.readFileSync(pendingFile, 'utf-8'));
+      content.metadata.commitSha = '$COMMIT_SHA';
+
+      const newFilename = path.basename(pendingFile).replace('-pending.json', '-$COMMIT_SHA.json');
+      const newPath = path.join(promptsDir, newFilename);
+
+      fs.writeFileSync(newPath, JSON.stringify(content, null, 2));
+      fs.unlinkSync(pendingFile);
+    } catch (error) {}
+  });
+
+  if (pendingFiles.length > 0) {
+    console.log(\\\`✓ Linked \\\${pendingFiles.length} prompt(s) to commit $COMMIT_SHA\\\`);
+  }
+}
+
+// Clean up session files
+if (fs.existsSync(metaDir)) {
+  const sessionFiles = fs.readdirSync(metaDir)
+    .filter(f => f.startsWith('session-') && f.endsWith('.json'))
+    .map(f => path.join(metaDir, f));
+
+  sessionFiles.forEach(f => {
+    try { fs.unlinkSync(f); } catch (e) {}
+  });
+}
+" 2>/dev/null || true
+`;
+
+  try {
+    // Handle pre-commit (append to existing)
+    if (await fs.pathExists(preCommitPath)) {
+      const existingContent = await fs.readFile(preCommitPath, 'utf-8');
+
+      // Check if gitify-prompt code already exists
+      if (!existingContent.includes('# Gitify Prompt - Save sessions')) {
+        await fs.writeFile(preCommitPath, existingContent + gitifyPreCommitCode);
+        console.log(chalk.green('✓ Updated .husky/pre-commit hook'));
+      } else {
+        console.log(chalk.gray('  .husky/pre-commit already configured'));
+      }
+    } else {
+      // Create new pre-commit hook
+      await fs.writeFile(preCommitPath, '#!/bin/sh\n' + gitifyPreCommitCode, { mode: 0o755 });
+      console.log(chalk.green('✓ Created .husky/pre-commit hook'));
+    }
+
+    // Handle post-commit (create or overwrite)
+    await fs.writeFile(postCommitPath, gitifyPostCommitCode, { mode: 0o755 });
+    console.log(chalk.green('✓ Created .husky/post-commit hook'));
+  } catch (error) {
+    console.log(chalk.yellow(`Warning: Failed to install Husky hooks: ${error.message}`));
   }
 }
 

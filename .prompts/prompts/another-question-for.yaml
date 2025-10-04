@@ -1,0 +1,27 @@
+content: |+
+  # Auto-captured conversation from claude-code
+
+  Session ID: 91f7cb7750003775
+  Started: 2025-10-03T21:07:02.905Z
+
+  ## Conversation
+
+  **user**: Another question for repo1
+
+  **assistant**: Another answer for repo1
+
+commitMessage: Auto-captured from claude-code (2 messages)
+metadata:
+  model: unknown
+  tags:
+    - auto-captured
+    - claude-code
+  tool: claude-code
+  sessionId: 91f7cb7750003775
+  captureTime: '2025-10-03T21:07:02.905Z'
+  filesModified: []
+description: Another question for repo1
+id: another-question-for
+version: b7190b63
+timestamp: '2025-10-03T21:07:02.909Z'
+lastModified: '2025-10-03T21:07:02.909Z'

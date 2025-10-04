@@ -1,0 +1,27 @@
+content: |+
+  # Auto-captured conversation from test-tool
+
+  Session ID: fccbce9e2f19ee01
+  Started: 2025-10-03T21:06:28.708Z
+
+  ## Conversation
+
+  **user**: Test
+
+  **assistant**: Response
+
+commitMessage: Auto-captured from test-tool (2 messages)
+metadata:
+  model: unknown
+  tags:
+    - auto-captured
+    - test-tool
+  tool: test-tool
+  sessionId: fccbce9e2f19ee01
+  captureTime: '2025-10-03T21:06:28.708Z'
+  filesModified: []
+description: Test
+id: test
+version: 63edaa4f
+timestamp: '2025-10-03T21:06:28.708Z'
+lastModified: '2025-10-03T21:06:28.708Z'

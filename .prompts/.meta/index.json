@@ -1,0 +1,38 @@
+{
+  "test": {
+    "lastVersion": "63edaa4f",
+    "lastModified": "2025-10-03T21:06:28.708Z",
+    "model": "unknown",
+    "tags": [
+      "auto-captured",
+      "test-tool"
+    ]
+  },
+  "question-for-repo1": {
+    "lastVersion": "6d77dedb",
+    "lastModified": "2025-10-03T21:07:02.905Z",
+    "model": "unknown",
+    "tags": [
+      "auto-captured",
+      "claude-code"
+    ]
+  },
+  "question-for-repo2": {
+    "lastVersion": "7f2aa790",
+    "lastModified": "2025-10-03T21:07:02.908Z",
+    "model": "unknown",
+    "tags": [
+      "auto-captured",
+      "claude-code"
+    ]
+  },
+  "another-question-for": {
+    "lastVersion": "b7190b63",
+    "lastModified": "2025-10-03T21:07:02.909Z",
+    "model": "unknown",
+    "tags": [
+      "auto-captured",
+      "claude-code"
+    ]
+  }
+}

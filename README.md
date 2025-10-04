@@ -1,24 +1,348 @@
 # Gitify Prompt
 
-**Version control for LLM prompts** - Automatically capture and track your Claude Code conversations linked to git commits.
+**Automatic conversation capture for Claude Code** - Track your AI-assisted coding sessions with zero manual effort.
+
+## What It Does
+
+Automatically captures your Claude Code conversations and links them to git commits, giving you a complete history of how your code evolved with AI assistance.
 
 ## Features
 
-- 🤖 **Auto-Capture for Claude Code** - Automatically captures prompts when you use `claude` command
-- 🔗 **Git Integration** - Prompts automatically saved and linked to your git commits
-- 📝 **Version Control** - Track prompt changes over time
-- 🧪 **Testing Framework** - Define and run tests to validate prompts
-- 📊 **Diff & History** - Compare prompt versions and view evolution
-- 🔍 **Search & Filter** - Find prompts by tags, models, or content
+- 🤖 **Zero-Effort Capture** - Conversations automatically saved as you code
+- 💬 **Full Conversations** - Captures your prompts AND Claude's responses
+- 📋 **Pasted Content** - Preserves screenshots, code snippets, error messages you paste
+- 🔗 **Git Integration** - Links conversations to commits automatically
+- 👤 **Git Author Tracking** - Records who had the conversation
+- 🚀 **Real-Time Sync** - Sessions saved immediately, not on exit
+- 🔄 **Multi-Session Support** - Run multiple Claude instances, capture all of them
+- 🛠️ **Any Commit Tool** - Works with GitHub Desktop, VS Code, Terminal, or even Claude itself
 
-## Installation
+## Quick Start
+
+### 1. Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/yourusername/git-prompts.git
-cd git-prompts
+npm install -g gitify-prompt
+```
 
-# Install dependencies
+### 2. Set Up Wrapper Alias
+
+```bash
+# Add to ~/.zshrc or ~/.bashrc:
+echo 'alias claude="/path/to/gitify-prompt/dist/bin/claude-wrapper.sh"' >> ~/.zshrc
+source ~/.zshrc
+```
+
+**Or run without alias:**
+```bash
+/path/to/claude-wrapper.sh "your prompt"
+```
+
+### 3. Initialize Your Project
+
+```bash
+cd your-project
+gitify-prompt init
+```
+
+This creates:
+- `.prompts/` directory
+- Git hooks (automatically detects Husky!)
+
+### 4. Use Claude Normally
+
+```bash
+claude "add error handling to src/api.ts"
+# Conversation captured automatically ✓
+```
+
+### 5. Commit Your Changes
+
+```bash
+git add .
+git commit -m "Add error handling"
+# ✓ Conversation linked to commit automatically!
+```
+
+## How It Works
+
+### Architecture
+
+```
+┌────────────────────────────────────────┐
+│ Your Shell: claude "add feature"      │
+└────────────────┬───────────────────────┘
+                 ↓
+┌────────────────────────────────────────┐
+│ claude-wrapper.sh                      │
+│  Sets: NODE_OPTIONS=--import hook.js   │
+└────────────────┬───────────────────────┘
+                 ↓
+┌────────────────────────────────────────┐
+│ Claude Code (with hook loaded)        │
+│  - Intercepts file writes             │
+│  - Reads ~/.claude/projects/*.jsonl   │
+│  - Saves to .prompts/.meta/session-*.json │
+└────────────────┬───────────────────────┘
+                 ↓
+┌────────────────────────────────────────┐
+│ git commit                             │
+│  Pre-commit: Add prompts to commit     │
+│  Post-commit: Link to commit SHA       │
+└────────────────────────────────────────┘
+```
+
+### Conversation Capture
+
+The hook reads from `~/.claude/projects/` where Claude Code stores conversations:
+
+```
+~/.claude/projects/
+└── -Users-you-dev-project/
+    ├── abc123-xyz.jsonl   ← Your conversations
+    ├── def456-uvw.jsonl
+    └── ...
+```
+
+Each JSONL file contains:
+- User messages (your prompts)
+- Assistant messages (Claude's responses)
+- Tool uses (code executions)
+- Timestamps
+- Pasted content (inline)
+
+### Session Matching
+
+Sessions are matched to conversations using:
+1. **Timestamp** - Only messages after session start
+2. **Project path** - Only conversations from this repo
+3. **Best fit** - Picks conversation with most matching messages
+
+### What Gets Saved
+
+```json
+{
+  "id": "session-abc123",
+  "tool": "claude-code",
+  "startTime": "2025-01-15T10:30:00Z",
+  "author": {
+    "name": "Your Name",
+    "email": "you@example.com"
+  },
+  "messages": [
+    {
+      "role": "user",
+      "content": "add error handling to src/api.ts",
+      "timestamp": "2025-01-15T10:30:00Z"
+    },
+    {
+      "role": "assistant",
+      "content": "I'll add comprehensive error handling...",
+      "timestamp": "2025-01-15T10:30:05Z"
+    }
+  ],
+  "filesModified": [
+    {
+      "file": "/path/to/project/src/api.ts",
+      "timestamp": "2025-01-15T10:30:10Z"
+    }
+  ],
+  "metadata": {
+    "commitSha": "abc123def",
+    "fileCount": 1,
+    "messageCount": 2
+  }
+}
+```
+
+## Features in Detail
+
+### ✅ Real-Time Session Saving
+
+Sessions are saved **immediately** when files are modified, not when Claude exits. This means:
+- ✅ Works even if Claude is still running when you commit
+- ✅ Captures sessions even if Claude crashes
+- ✅ No dependency on process lifecycle
+
+### ✅ Pasted Content Included
+
+When you paste error messages, screenshots, or code into Claude:
+```
+You: [Pasted text #1 +150 lines] fix this error
+```
+
+The **full 150 lines** are captured, not just the summary.
+
+### ✅ Multi-Session Support
+
+Run Claude in 3 terminal tabs:
+```bash
+# Tab 1: claude "fix bug A"
+# Tab 2: claude "add feature B"
+# Tab 3: claude "refactor C"
+```
+
+Commit once → **All 3 conversations captured!**
+
+### ✅ Works with Any Commit Tool
+
+- ✅ Terminal: `git commit`
+- ✅ GitHub Desktop
+- ✅ VS Code Source Control
+- ✅ Claude itself: `claude "commit these changes"`
+
+All trigger the same hooks → consistent behavior.
+
+### ✅ Husky Integration
+
+Automatically detects if your project uses Husky:
+
+**Standard Git:**
+```
+.git/hooks/
+├── pre-commit   ← Created by gitify-prompt
+└── post-commit  ← Created by gitify-prompt
+```
+
+**Husky Project:**
+```
+.husky/
+├── pre-commit   ← Appended (preserves lint-staged!)
+└── post-commit  ← Created by gitify-prompt
+```
+
+## Repository Structure
+
+```
+your-project/
+├── .prompts/
+│   ├── config.json
+│   ├── prompts/
+│   │   ├── 1705315800000-abc123.json  ← Captured session
+│   │   ├── 1705402200000-def456.json
+│   │   └── ...
+│   └── .meta/
+│       └── (temporary session files)
+└── .git/
+    └── hooks/
+        ├── pre-commit
+        └── post-commit
+```
+
+## Commands
+
+### `gitify-prompt init`
+Initialize `.prompts/` directory and install git hooks.
+
+```bash
+cd your-project
+gitify-prompt init
+```
+
+**Options:**
+- Detects Husky automatically
+- Preserves existing hooks
+- Safe to run multiple times
+
+### `gitify-prompt list`
+List captured sessions (coming soon).
+
+### `gitify-prompt show <sha>`
+View conversation for a specific commit (coming soon).
+
+## Configuration
+
+Edit `.prompts/config.yaml`:
+
+```yaml
+autoCapture:
+  enabled: true
+  tools:
+    claudeCode: true
+    # cursor: false (future)
+    # chatgpt: false (future)
+
+privacy:
+  maskSensitiveData: true
+  excludePatterns:
+    - "*.env"
+    - "*secret*"
+    - "*password*"
+    - "*api*key*"
+```
+
+## Troubleshooting
+
+### Prompts Not Captured?
+
+**1. Check hook is loaded:**
+```bash
+claude --version
+# Look for: [gitify-prompt] Capturing session ...
+```
+
+**2. Check wrapper alias:**
+```bash
+which claude
+# Should show: ...claude-wrapper.sh
+```
+
+**3. Check git hooks installed:**
+```bash
+cat .git/hooks/pre-commit | grep gitify-prompt
+# or for Husky:
+cat .husky/pre-commit | grep gitify-prompt
+```
+
+**4. Check session files exist:**
+```bash
+ls -la .prompts/.meta/
+# Should show session-*.json when Claude is running
+```
+
+**5. Re-initialize:**
+```bash
+gitify-prompt init
+```
+
+### No Conversation in Captured Prompts?
+
+Check if Claude Code is storing conversations:
+```bash
+ls -la ~/.claude/projects/
+# Should see directory for your project
+```
+
+If not, Claude Code might not be saving conversations. This is a Claude Code issue, not gitify-prompt.
+
+## Privacy & Security
+
+- **Local Only** - All data stays on your machine
+- **No Network** - No remote connections
+- **No Telemetry** - No tracking or analytics
+- **Git Control** - You decide what gets committed
+- **Sensitive Data Masking** - Auto-filters passwords, API keys (config)
+
+## Requirements
+
+- Node.js 18.19+ (for `--import` flag)
+- Git
+- Claude Code
+- macOS or Linux (Windows untested)
+
+## Known Limitations
+
+1. **Claude Code only** (Cursor, ChatGPT not supported yet)
+2. **Requires wrapper setup** (alias configuration)
+3. **No retroactive capture** (only active sessions)
+4. **Windows untested** (path encoding might differ)
+
+## Development
+
+```bash
+# Clone and install
+git clone https://github.com/gauravkrp/git-for-prompts.git
+cd git-prompts
 npm install
 
 # Build
@@ -27,303 +351,46 @@ npm run build
 # Link globally
 npm link
 
-# Verify installation
-gitify-prompt --version
-```
-
-## Quick Start
-
-### 1. Initialize Your Project
-
-```bash
-cd your-project
+# Test
+cd /path/to/test/project
 gitify-prompt init
+claude "test prompt"
 ```
 
-This creates:
-- `.prompts/` directory for storing prompts
-- `.git/hooks/post-commit` git hook for auto-capture
+## How This Differs from Manual Annotation
 
-### 2. Start Using Claude Code
-
+**Before (Manual):**
 ```bash
-# Just use Claude normally
-claude
-
-# The integration starts automatically!
-# Your conversation is captured as you work
-```
-
-### 3. Make Changes and Commit
-
-```bash
-# Make your code changes
-# ... work with Claude ...
-
-# Commit your changes
-git add .
-git commit -m "Add new feature"
-
-# ✓ Prompts automatically captured and linked to this commit!
-```
-
-## How It Works
-
-### Automatic Capture
-
-When you run the `claude` command:
-
-1. **In-Process Daemon**: A capture daemon starts in the same terminal process
-2. **Session Tracking**: Creates a session tagged with your repository path
-3. **Auto-Tagging**: All sessions are tagged with `repoPath` for multi-repo support
-4. **Git Hook Integration**: On commit, the post-commit hook saves all prompts for your repo
-
-### Multi-Repository Support
-
-Gitify Prompt automatically handles multiple repositories:
-
-- Each session is tagged with `repoPath`
-- Git commits only save prompts for the current repository
-- Works seamlessly across different projects
-
-### Repository Structure
-
-```
-your-project/
-├── .prompts/
-│   ├── config.json          # Configuration
-│   ├── prompts/             # Captured prompt files
-│   │   ├── <timestamp>-<sha>.json
-│   │   └── ...
-│   └── tests/               # Test specifications
-└── .git/
-    └── hooks/
-        └── post-commit      # Auto-capture hook
-```
-
-### Prompt Format
-
-Each captured prompt includes:
-
-```json
-{
-  "id": "session-id",
-  "timestamp": "2024-01-15T10:30:00Z",
-  "tool": "claude-code",
-  "metadata": {
-    "commitSha": "abc123",
-    "repoPath": "/path/to/your/repo",
-    "cwd": "/path/to/your/repo",
-    "platform": "darwin"
-  },
-  "conversation": [
-    { "role": "user", "content": "..." },
-    { "role": "assistant", "content": "..." }
-  ],
-  "code_changes": [
-    {
-      "file": "src/index.ts",
-      "before": "old content",
-      "after": "new content"
-    }
-  ]
-}
-```
-
-## Manual Prompt Management
-
-You can also manually manage prompts:
-
-```bash
-# Create a prompt
-gitify-prompt commit my-prompt \
-  -c "Write a function to..." \
-  -m "Initial version" \
-  --model claude-3-opus \
-  --tags feature,bugfix
-
-# View prompt history
-gitify-prompt history my-prompt
-
-# Compare versions
-gitify-prompt diff my-prompt --from v1 --to v2
-
-# List all prompts
-gitify-prompt list
-gitify-prompt list --tags feature
-gitify-prompt list --model claude-3
-
-# Run tests
-gitify-prompt test my-prompt
-gitify-prompt test --verbose
-```
-
-## Configuration
-
-Edit `.prompts/config.json`:
-
-```json
-{
-  "autoCapture": {
-    "enabled": true,
-    "tools": {
-      "claudeCode": true,
-      "cursor": false,
-      "chatgpt": false
-    }
-  },
-  "privacy": {
-    "maskSensitiveData": true,
-    "excludePatterns": [
-      "*.env",
-      "*secret*",
-      "*password*",
-      "*api*key*"
-    ]
-  }
-}
-```
-
-## Testing Prompts
-
-Define tests to validate prompt behavior:
-
-```yaml
-# .prompts/prompts/my-prompt.yaml
-id: my-prompt
-content: |
-  Write a function to...
-tests:
-  - type: output
-    description: Should generate valid response
-  - type: contains
-    description: Should mention key concepts
-    keywords:
-      - function
-      - parameter
-  - type: length
-    description: Should be concise
-    min: 100
-    max: 500
-```
-
-Run tests:
-
-```bash
-gitify-prompt test my-prompt --verbose
-```
-
-## Programmatic API
-
-```typescript
-import { CaptureDaemon, ClaudeCodeIntegration } from 'gitify-prompt';
-
-// Use Claude Code integration
-import { claudeCodeIntegration } from 'gitify-prompt';
-await claudeCodeIntegration.init();
-
-// Or use CaptureDaemon directly
-const daemon = new CaptureDaemon();
-await daemon.start();
-
-const sessionId = daemon.createSession('my-tool', {
-  repoPath: process.cwd()
-});
-
-daemon.addMessage(sessionId, 'user', 'Hello!');
-daemon.addMessage(sessionId, 'assistant', 'Hi there!');
-
-const session = daemon.getSession(sessionId);
-await daemon.saveSession(session, 'commit-sha');
-```
-
-## Commands Reference
-
-### `gitify-prompt init`
-Initialize a prompt repository in the current directory.
-
-### `gitify-prompt commit <prompt-id>`
-Commit a new prompt or update an existing one.
-
-### `gitify-prompt list [options]`
-List all prompts. Filter by `--tags` or `--model`.
-
-### `gitify-prompt history <prompt-id> [options]`
-Show commit history. Use `-n` to limit results.
-
-### `gitify-prompt diff <prompt-id> [options]`
-Compare versions. Use `--from` and `--to` for specific versions.
-
-### `gitify-prompt test [prompt-id] [options]`
-Run tests. Use `--verbose` for detailed output.
-
-## Use Cases
-
-### 1. Track Prompt Evolution
-```bash
-gitify-prompt history "sql-generator"
-gitify-prompt diff "sql-generator" --from v1 --to v3
-```
-
-### 2. Team Collaboration
-```bash
-git add .prompts/
-git commit -m "Improve data extraction prompt"
-git push
-```
-
-### 3. Automated Capture Workflow
-```bash
-# Just use Claude - everything is automatic!
-claude
+claude "add feature"
 # ... work ...
-git commit -m "Feature complete"
-# Prompts auto-captured!
+gitify-prompt annotate -m "I asked Claude to add feature X"
+git commit -m "Add feature"
 ```
 
-## Troubleshooting
-
-### Prompts Not Being Captured
-
-1. Make sure you initialized: `gitify-prompt init`
-2. Check the git hook exists: `cat .git/hooks/post-commit`
-3. Verify config: `cat .prompts/config.json`
-4. Check that `autoCapture.enabled` is `true`
-
-### Re-initialize
-
+**Now (Automatic):**
 ```bash
-gitify-prompt init
+claude "add feature"  # ← Conversation captured automatically
+git commit -m "Add feature"  # ← Linked automatically
 ```
 
-This recreates the `.prompts/` directory and git hooks.
-
-## Privacy & Security
-
-- **Sensitive Data Masking**: Automatically masks passwords, API keys, etc.
-- **Exclude Patterns**: Configure files/patterns to never capture
-- **Local Storage**: All prompts stored locally in `.prompts/`
-- **Repository Isolation**: Each repo's sessions are kept separate
-
-## Development
-
-```bash
-# Install dependencies
-npm install
-
-# Build
-npm run build
-
-# Run tests
-npm test
-
-# Link for local development
-npm link
-```
+**Zero extra steps!**
 
 ## Contributing
 
-Contributions welcome! Please open an issue or PR.
+Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
+
+**Areas needing help:**
+- Windows support
+- Cursor IDE integration
+- ChatGPT integration
+- Automated tests
+- Performance optimization
+
+## Related Projects
+
+- [Claude Code](https://claude.com/claude-code) - The AI coding assistant
+- [Cursor](https://cursor.sh) - AI-first code editor
+- [Aider](https://aider.chat) - AI pair programming
 
 ## License
 
@@ -331,10 +398,14 @@ MIT
 
 ---
 
-**Start capturing your Claude Code prompts today!**
+**Start capturing your Claude conversations today!**
 
 ```bash
+npm install -g gitify-prompt
 cd your-project
 gitify-prompt init
-claude
+# Add wrapper alias (see Quick Start)
+claude "your first prompt"
+git add . && git commit -m "First captured session!"
 ```
+

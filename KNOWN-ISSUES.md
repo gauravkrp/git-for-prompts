@@ -1,251 +1,358 @@
 # Known Issues & Limitations
 
-## Status: Not Yet Fully Tested
-
-⚠️ **The daemon implementation has been built but NOT fully tested in a real environment.**
-
-### What's Been Verified:
-- ✅ Compilation succeeds (TypeScript builds)
-- ✅ CLI commands exist (`gitify-prompt daemon start/stop/status`)
-- ✅ Basic status check works when daemon not running
-- ✅ Code review completed for obvious bugs
-- ✅ **Unix socket communication** between client and server - WORKS!
-- ✅ **DaemonClient connection** - Successfully connects and retrieves status
-- ✅ **Daemon stop command** - Successfully stops running daemon
-- ✅ **Manual daemon start** - Daemon stays alive when started with `node dist/cli/daemon-process.js &`
-
-### What Has NOT Been Tested:
-- ⚠️ **Daemon automated background spawn** - ISSUE: Process exits when spawned via `spawn()` with `detached: true`
-- ❌ **Session creation** via DaemonClient in real scenario
-- ❌ **Multi-repo filtering** in real scenario
-- ❌ **Git commit integration** with running daemon
-
-## Potential Issues
-
-### 1. Daemon Background Spawn Issue (CRITICAL)
-**Issue**: Daemon exits immediately when spawned via `spawn()` with `detached: true`.
-
-**Status**: ⚠️ **CRITICAL** - Automated daemon start doesn't work
-
-**Workaround**: Start daemon manually:
-```bash
-# Start daemon manually (works correctly)
-node dist/cli/daemon-process.js &
-
-# Verify it's running
-gitify-prompt daemon status
-```
-
-**Investigation Findings**:
-- ✅ Daemon process code is correct - stays alive when run manually
-- ✅ Unix socket server works correctly
-- ✅ DaemonClient connects and communicates successfully
-- ❌ Process exits when spawned with `spawn()` detached mode
-- Logs show daemon starts successfully but process disappears
-- No error messages in daemon-err.log
-- Likely related to Node.js process detachment or file descriptor handling
-
-**Potential Root Causes**:
-1. File descriptor closure timing issue
-2. Child process group ID not set correctly
-3. Process receiving unexpected signal (HUP, PIPE)
-4. Node.js event loop exiting despite Unix socket server
-
-**Fix Attempts**:
-- ✅ Tried adding explicit `await new Promise(() => {})` keepalive - didn't help
-- ✅ Tried closing file descriptors in parent after spawn - didn't help
-- ✅ Increased wait time to 1500ms - didn't help
-
-**Next Steps to Debug**:
-1. Try using `nohup` wrapper instead of `spawn()` detached
-2. Add process event listeners for all signals to log what's happening
-3. Try TCP socket instead of Unix socket to rule out socket issues
-4. Test on different OS (Linux vs macOS)
-
-### 2. Unix Socket Permissions
-**Issue**: Unix socket at `/tmp/gitify-prompt/daemon.sock` may have permission issues.
-
-**Symptoms**:
-- `EACCES` or `EPERM` errors when connecting
-- Daemon starts but clients can't connect
-
-**Fix**:
-```bash
-# Check socket permissions
-ls -la /tmp/gitify-prompt/daemon.sock
-
-# If needed, fix permissions
-chmod 666 /tmp/gitify-prompt/daemon.sock
-```
-
-### 3. Stale PID Files
-**Issue**: If daemon crashes, PID file might remain.
-
-**Symptoms**:
-- `gitify-prompt daemon start` says "already running"
-- But daemon isn't actually running
-
-**Fix**:
-```bash
-# Manually clean up
-rm /tmp/gitify-prompt/daemon.pid
-rm /tmp/gitify-prompt/daemon.sock
-```
-
-### 4. Path Resolution in Compiled Code
-**Issue**: `__dirname` might not work correctly in ESM modules.
-
-**Symptoms**:
-- Daemon fails to start
-- Error: "Cannot find module daemon-process.js"
-
-**Fix**: May need to update `startDaemonBackground()` to use full path:
-```typescript
-const scriptPath = path.join(process.cwd(), 'dist', 'cli', 'daemon-process.js');
-```
-
-### 5. Session Metadata Not Properly Tagged
-**Issue**: Sessions might not get `repoPath` metadata.
-
-**Symptoms**:
-- All sessions saved on any commit
-- Multi-repo filtering doesn't work
-
-**Debug**:
-```bash
-# Check session metadata
-gitify-prompt daemon status
-# Look for "Repo:" field in session details
-```
-
-### 6. Git Hook Not Working
-**Issue**: The git post-commit hook references old package name.
-
-**Current hook**:
-```bash
-const { CaptureDaemon } = require('git-for-prompts');
-```
-
-**Should be**:
-```bash
-const { DaemonClient } = require('gitify-prompt');
-```
-
-**Fix**: Need to update hook generation in `src/commands/init.ts`
-
-## Windows Compatibility
-
-### Issue: Unix Sockets Don't Work on Windows
-Unix sockets (`/tmp/gitify-prompt/daemon.sock`) are not available on Windows.
-
-**Status**: ❌ Not supported yet
-
-**Workaround Options**:
-1. Use TCP socket on localhost instead
-2. Use Windows named pipes
-3. Use a different IPC mechanism
-
-## Testing Checklist
-
-To properly test the daemon:
-
-```bash
-# 1. Clean slate
-rm -rf /tmp/gitify-prompt
-
-# 2. Start daemon
-gitify-prompt daemon start
-# Should see: "✓ Daemon started successfully"
-
-# 3. Check status
-gitify-prompt daemon status
-# Should see: "✓ Daemon is running"
-
-# 4. Check files created
-ls -la /tmp/gitify-prompt/
-# Should see: daemon.sock, daemon.pid, daemon.log
-
-# 5. Check daemon process
-ps aux | grep daemon-process
-# Should see the background process
-
-# 6. Test stop
-gitify-prompt daemon stop
-# Should see: "✓ Daemon stopped"
-
-# 7. Verify cleanup
-ls -la /tmp/gitify-prompt/
-# daemon.sock and daemon.pid should be gone
-```
-
-## Real-World Testing Needed
-
-### Test Scenario 1: Basic Capture
-```bash
-# 1. Initialize repo
-cd ~/test-project
-gitify-prompt init
-
-# 2. Start daemon
-gitify-prompt daemon start
-
-# 3. Use Claude (if integration working)
-# ... do some work ...
-
-# 4. Check sessions
-gitify-prompt daemon status
-# Should show active sessions
-
-# 5. Commit
-git commit -m "Test"
-
-# 6. Check if prompts saved
-ls .prompts/prompts/
-```
-
-### Test Scenario 2: Multi-Repo
-```bash
-# 1. Start daemon once
-gitify-prompt daemon start
-
-# 2. Work on repo1
-cd ~/repo1
-# ... Claude work ...
-
-# 3. Work on repo2 (different terminal)
-cd ~/repo2
-# ... Claude work ...
-
-# 4. Check status shows both repos
-gitify-prompt daemon status
-# Should show sessions grouped by repo
-
-# 5. Commit in repo1
-cd ~/repo1
-git commit -m "Test"
-
-# 6. Verify only repo1 sessions saved
-gitify-prompt daemon status
-# repo2 sessions should still be active
-```
-
-## Recommended Next Steps
-
-1. **Manual Testing**: Actually start the daemon and test basic flow
-2. **Fix Git Hook**: Update hook generation to use DaemonClient
-3. **Add Error Handling**: More robust error messages
-4. **Add Logs**: Improve daemon logging for debugging
-5. **Windows Support**: Implement TCP socket fallback
-6. **Integration Tests**: Automated tests for daemon functionality
-
-## Current Recommendation
-
-**For Users**: This is **experimental code**. The daemon may not work as expected. Use at your own risk.
-
-**For Production**: Do NOT use yet. Wait for proper testing and bug fixes.
-
-**For Development**: Test in a sandbox environment first!
+**Last Updated:** October 5, 2025
+**Version:** 0.1.0 (in-process hook architecture)
 
 ---
 
-**Last Updated**: 2024-10-04 (Commit: 5c56b30)
+## Testing Status
+
+⚠️ **End-to-end testing incomplete**
+
+### ✅ What's Been Verified:
+- Code review completed
+- Individual components tested manually
+- Conversation parsing verified with real JSONL files
+- Git author capture tested
+- Hook loading verified
+- File capture verified
+- Pasted content verified (1531 chars)
+
+### ❌ What Has NOT Been Tested:
+- Complete flow: Claude → Commit → Verify
+- Multi-session concurrent scenario
+- Real-world usage over time
+- Windows compatibility
+- Large sessions (50+ files)
+
+---
+
+## Known Limitations
+
+### 1. Windows Compatibility (UNTESTED)
+
+**Issue:** Path encoding uses Unix-style paths
+```typescript
+const encodedPath = cwd.replace(/\//g, '-');
+// Windows: C:\Users\... → C:-Users-...
+```
+
+**Risk:** Medium
+**Status:** Unknown - needs testing
+
+**Workaround:** None yet
+
+---
+
+### 2. Requires Node.js 18.19+
+
+**Issue:** Uses `--import` flag for ESM preloading
+
+**Requirements:**
+- Node.js 18.19.0 or higher
+- Not backwards compatible
+
+**Workaround:** Upgrade Node.js
+
+---
+
+### 3. Manual Wrapper Setup Required
+
+**Issue:** Requires alias configuration
+
+```bash
+alias claude="/path/to/claude-wrapper.sh"
+```
+
+**Impact:** Not seamless installation
+**Status:** Expected trade-off
+
+**Future:** Could provide installer script
+
+---
+
+### 4. Claude Code Only
+
+**Issue:** Only works with Claude Code terminal tool
+
+**Not Supported:**
+- ❌ Cursor IDE
+- ❌ ChatGPT interface
+- ❌ Other AI coding tools
+
+**Status:** By design (for now)
+
+**Future:** May add Cursor integration
+
+---
+
+### 5. Performance with Many Files
+
+**Issue:** `saveSessionState()` called on EVERY file write
+
+**Potential Impact:**
+- Reads ~/.claude/projects/*.jsonl files
+- Reads git config
+- Writes session JSON
+- Could slow down with 50+ file changes
+
+**Risk:** Low-Medium
+**Tested:** Only with <10 file changes
+
+**Mitigation:** Add debouncing if needed
+
+---
+
+### 6. Failed Commits Leave Pending Files
+
+**Issue:** Pre-commit creates `*-pending.json` files
+
+**Scenario:**
+```bash
+git commit -m "test"
+# Pre-commit hook runs, creates pending.json
+# User aborts commit (Ctrl+C)
+# → pending.json files remain
+```
+
+**Impact:** Low (cleaned up on next commit)
+**Status:** Acceptable
+
+---
+
+### 7. No Conversation = Empty Messages
+
+**Issue:** If conversation not found in ~/.claude/projects/
+
+**Behavior:**
+- Session still saved
+- `messages: []` (empty array)
+- Only file changes recorded
+
+**Causes:**
+- Claude Code not storing conversations
+- Path encoding mismatch
+- Timestamp mismatch
+
+**Debugging:**
+```bash
+ls -la ~/.claude/projects/
+# Should show -Users-you-dev-project/ directory
+```
+
+---
+
+### 8. No Retroactive Capture
+
+**Limitation:** Only captures active sessions
+
+**Can't do:**
+- ❌ Capture old conversations
+- ❌ Recover lost sessions
+- ❌ Import existing Claude history
+
+**By design:** Only real-time capture
+
+---
+
+### 9. Silent Failures
+
+**Issue:** Many errors fail silently
+
+**Example:**
+```typescript
+catch (error) {
+  // Silent fail - don't interfere with Claude
+}
+```
+
+**Good:** Won't break Claude
+**Bad:** Hard to debug issues
+
+**Improvement:** Add verbose logging mode
+
+---
+
+## Edge Cases
+
+### Multiple Sessions Within 60 Seconds
+
+**Scenario:** Start 2 Claude sessions 30 seconds apart
+
+**Behavior:**
+- 60-second buffer for timestamp matching
+- Both might capture overlapping messages
+- Best-match scoring should handle correctly
+
+**Risk:** Low
+**Status:** Untested
+
+---
+
+### Very Long Conversations
+
+**Scenario:** 100+ messages in single session
+
+**Potential Issues:**
+- Large JSONL files to parse
+- Memory usage
+- Write performance
+
+**Risk:** Low
+**Status:** Untested
+
+---
+
+### Symbolic Links
+
+**Issue:** Symlinked project directories
+
+**Behavior:** Unknown
+**Status:** Untested
+
+---
+
+### Git Worktrees
+
+**Issue:** Multiple working trees for same repo
+
+**Behavior:** Unknown
+**Status:** Untested
+
+---
+
+## Troubleshooting Guide
+
+### Issue: No session files created
+
+**Check:**
+```bash
+# 1. Hook loaded?
+claude --version
+# Should show: [gitify-prompt] Capturing session...
+
+# 2. Wrapper working?
+which claude
+# Should show: .../claude-wrapper.sh
+
+# 3. Made file changes?
+# Hook only triggers on file writes
+
+# 4. Check for errors
+ls -la ~/.claude/projects/
+# Should have your project directory
+```
+
+---
+
+### Issue: Empty messages array
+
+**Check:**
+```bash
+# 1. Conversation files exist?
+ls -la ~/.claude/projects/-Users-you-dev-project/
+
+# 2. Recent files?
+ls -lt ~/.claude/projects/-Users-you-dev-project/ | head -5
+
+# 3. Path encoding correct?
+# Should match your actual project path with / → -
+```
+
+---
+
+### Issue: Git author is null
+
+**Check:**
+```bash
+git config user.name
+git config user.email
+
+# If not set:
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+```
+
+---
+
+### Issue: Hooks not running
+
+**Check:**
+```bash
+# Standard git:
+ls -la .git/hooks/pre-commit
+ls -la .git/hooks/post-commit
+
+# Husky:
+ls -la .husky/pre-commit
+ls -la .husky/post-commit
+
+# Re-initialize:
+gitify-prompt init
+```
+
+---
+
+## Recommendations
+
+### Before Using in Production
+
+1. ✅ **Test in sandbox project first**
+2. ✅ **Verify end-to-end flow works**
+3. ✅ **Check conversations captured correctly**
+4. ✅ **Monitor for performance issues**
+5. ✅ **Have backup/recovery plan**
+
+### When to Use
+
+**Good for:**
+- Personal projects
+- Solo development
+- Experimentation
+- Learning
+
+**Not ready for:**
+- Mission-critical projects
+- Team environments (untested)
+- Production deployments (untested)
+- Windows environments (untested)
+
+---
+
+## Reporting Issues
+
+Found a bug? Please report:
+
+1. **GitHub Issues:** https://github.com/gauravkrp/git-for-prompts/issues
+2. **Include:**
+   - OS and Node.js version
+   - Full error message
+   - Steps to reproduce
+   - Output of `gitify-prompt daemon status` (if applicable)
+   - Relevant logs from `.prompts/.meta/`
+
+---
+
+## Future Improvements
+
+### High Priority
+- [ ] End-to-end testing
+- [ ] Windows support
+- [ ] Verbose logging mode
+- [ ] Automated tests
+
+### Medium Priority
+- [ ] Performance optimization (debouncing)
+- [ ] Better error messages
+- [ ] `gitify-prompt doctor` command
+- [ ] Usage analytics (local)
+
+### Low Priority
+- [ ] Cursor IDE support
+- [ ] ChatGPT support
+- [ ] Web UI for viewing prompts
+- [ ] Prompt search/filtering
+
+---
+
+**For detailed technical review, see [COMPREHENSIVE-REVIEW.md](COMPREHENSIVE-REVIEW.md)**

@@ -210,9 +210,11 @@ function onExit() {
   }
 }
 
-// Auto-initialize when module is loaded
-initializeHook().catch(() => {
+// Auto-initialize when module is loaded using top-level await
+// This ensures the hook is ready before any user code runs
+await initializeHook().catch((error) => {
   // Silent fail - don't break Claude if hook fails
+  console.error('[gitify-prompt] Hook initialization failed silently');
 });
 
 export { daemon, currentSessionId };

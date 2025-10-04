@@ -52,8 +52,9 @@ if [ ! -f "$HOOK_MODULE" ]; then
 fi
 
 # Set NODE_OPTIONS to preload our hook module
+# Using --import for ESM module support (Node 18.19+)
 # This loads the hook BEFORE Claude Code starts, in the same process
-export NODE_OPTIONS="--require $HOOK_MODULE ${NODE_OPTIONS}"
+export NODE_OPTIONS="--import=file://$HOOK_MODULE ${NODE_OPTIONS}"
 
 # Run the actual Claude Code binary with all arguments
 exec "$CLAUDE_BIN" "$@"

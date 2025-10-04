@@ -1,0 +1,22 @@
+{
+  "id": "test-session-123",
+  "tool": "claude-code",
+  "startTime": "2025-10-04T18:00:00.000Z",
+  "messages": [],
+  "codeChanges": [
+    {
+      "file": "/Users/gaurav/dev/git-prompts/test-capture-file.txt",
+      "beforeContent": "",
+      "afterContent": "test content",
+      "timestamp": "2025-10-04T18:00:01.000Z"
+    }
+  ],
+  "metadata": {
+    "cwd": "/Users/gaurav/dev/git-prompts",
+    "repoPath": "/Users/gaurav/dev/git-prompts",
+    "platform": "darwin",
+    "nodeVersion": "v22.14.0",
+    "startTime": "2025-10-04T18:00:00.000Z",
+    "commitSha": "d41af112c911df72fd29b07412b183aada5976d4"
+  }
+}

@@ -1,15 +1,15 @@
 [
   {
-    "id": "test-session-123",
+    "id": "c60c0ffd2e46be78",
     "tool": "claude-code",
-    "startTime": "2025-10-04T18:00:00.000Z",
+    "startTime": "2025-10-04T19:05:25.716Z",
     "messages": [],
     "codeChanges": [
       {
-        "file": "/Users/gaurav/dev/git-prompts/test-capture-file.txt",
+        "file": "/Users/gaurav/dev/git-prompts/demo-output.txt",
         "beforeContent": "",
-        "afterContent": "test content",
-        "timestamp": "2025-10-04T18:00:01.000Z"
+        "afterContent": "This file was created by Claude!",
+        "timestamp": "2025-10-04T19:05:25.718Z"
       }
     ],
     "metadata": {
@@ -17,7 +17,7 @@
       "repoPath": "/Users/gaurav/dev/git-prompts",
       "platform": "darwin",
       "nodeVersion": "v22.14.0",
-      "startTime": "2025-10-04T18:00:00.000Z"
+      "startTime": "2025-10-04T19:05:25.716Z"
     }
   }
 ]

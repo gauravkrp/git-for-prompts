@@ -6,8 +6,6 @@ node_modules/
 .env.local
 .env.*.local
 
-# Prompts repository (ignored in tool repo, tracked in user repos)
-.prompts/
 .claude/
 
 # IDE files

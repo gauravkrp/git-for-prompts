@@ -6,9 +6,9 @@ node_modules/
 .env.local
 .env.*.local
 
-# Prompts repository (can be tracked or ignored based on preference)
-# Uncomment to ignore:
-# .prompts/
+# Prompts repository (ignored in tool repo, tracked in user repos)
+.prompts/
+.claude/
 
 # IDE files
 .vscode/

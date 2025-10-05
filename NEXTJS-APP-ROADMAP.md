@@ -53,6 +53,11 @@ app.gitify-prompt.com/
 - [x] View public repo prompts
 - [x] Basic prompt list/detail pages
 - [x] Simple search
+- [ ] **Manual prompt upload** - Allow users to manually add conversations
+  - Upload JSON file with conversation
+  - Paste conversation text (will be parsed)
+  - Web form to manually input prompts
+  - Link to any git commit (optional)
 
 ### Tech Stack
 ```json
@@ -216,6 +221,13 @@ CREATE TABLE prompt_comments (
 - [ ] Regression detection (output changed)
 - [ ] Slack/Discord integration
 - [ ] Webhooks for CI/CD
+- [ ] **Advanced manual prompt editing**
+  - Edit existing prompts (fix typos, improve clarity)
+  - Bulk import from CSV/JSON
+  - Import from ChatGPT export
+  - Import from Cursor chat history
+  - Chrome extension to capture web-based AI chats
+  - API endpoint for manual prompt submission
 
 ---
 

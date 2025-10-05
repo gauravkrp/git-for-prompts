@@ -452,9 +452,52 @@ git commit -m "Add feature"  # ← Linked automatically
 
 **Zero extra steps!**
 
+## Development
+
+### Publishing New Versions
+
+This package uses automated publishing via GitHub Actions. When you push a version change to `main`, it automatically publishes to npm.
+
+**Quick version bump:**
+```bash
+npm version patch  # 0.1.0 → 0.1.1
+npm version minor  # 0.1.0 → 0.2.0
+npm version major  # 0.1.0 → 1.0.0
+
+git push && git push --tags
+```
+
+This triggers the GitHub Actions workflow which:
+1. Detects version change
+2. Runs build and tests
+3. Publishes to npm
+4. Creates GitHub release
+
+See [AUTO-PUBLISH.md](AUTO-PUBLISH.md) for setup instructions.
+
+### Local Development
+
+```bash
+# Clone the repo
+git clone https://github.com/gauravkrp/git-for-prompts.git
+cd git-for-prompts
+
+# Install dependencies
+npm install
+
+# Build
+npm run build
+
+# Watch mode
+npm run dev
+
+# Test locally
+./dist/cli/index.js --help
+```
+
 ## Contributing
 
-Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md).
+Contributions welcome! Please see [CONTRIBUTING.md](CONTRIBUTING.md) (coming soon).
 
 **Areas needing help:**
 - Windows support

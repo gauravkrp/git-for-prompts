@@ -33,6 +33,9 @@ jobs:
     needs: check-version
     if: needs.check-version.outputs.version-changed == 'true'
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      packages: write
     steps:
       - uses: actions/checkout@v4
 
@@ -57,20 +60,16 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Create GitHub Release
-        uses: actions/create-release@v1
+        run: |
+          gh release create v${{ needs.check-version.outputs.version }} \
+            --title "v${{ needs.check-version.outputs.version }}" \
+            --notes "## Changes in v${{ needs.check-version.outputs.version }}
+
+          See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
+
+          ### Installation
+          \`\`\`bash
+          npm install -g gitify-prompt@${{ needs.check-version.outputs.version }}
+          \`\`\`"
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: v${{ needs.check-version.outputs.version }}
-          release_name: v${{ needs.check-version.outputs.version }}
-          body: |
-            ## Changes in v${{ needs.check-version.outputs.version }}
-
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-
-            ### Installation
-            ```bash
-            npm install -g gitify-prompt@${{ needs.check-version.outputs.version }}
-            ```
-          draft: false
-          prerelease: false
+          GH_TOKEN: ${{ github.token }}

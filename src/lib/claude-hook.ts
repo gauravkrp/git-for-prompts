@@ -114,6 +114,28 @@ function hookFileSystem() {
 }
 
 /**
+ * Check if a file is ignored by git
+ */
+function isIgnoredByGit(filePath: string): boolean {
+  try {
+    const { execSync } = require('child_process');
+    const relativePath = path.relative(process.cwd(), filePath);
+
+    // Use git check-ignore to see if file is ignored
+    execSync(`git check-ignore -q "${relativePath}"`, {
+      cwd: process.cwd(),
+      stdio: 'ignore'
+    });
+
+    // If command succeeds (exit code 0), file is ignored
+    return true;
+  } catch (error) {
+    // If command fails (exit code 1), file is not ignored
+    return false;
+  }
+}
+
+/**
  * Capture a file change and send to daemon
  */
 function captureFileChange(filePath: string, newContent: any) {
@@ -138,6 +160,38 @@ function captureFileChange(filePath: string, newContent: any) {
         absolutePath.includes('.git/') ||
         absolutePath.includes('dist/') ||
         absolutePath.includes('build/')) {
+      return;
+    }
+
+    // Skip common build/cache directories (even if not in .gitignore)
+    const commonIgnoredDirs = [
+      '.next',           // Next.js
+      '.nuxt',           // Nuxt.js
+      '.output',         // Nuxt 3
+      '.svelte-kit',     // SvelteKit
+      'out',             // Next.js static export
+      '.cache',          // Various tools
+      '.turbo',          // Turborepo
+      '.vercel',         // Vercel
+      '.netlify',        // Netlify
+      'coverage',        // Test coverage
+      '.nyc_output',     // NYC coverage
+      '__pycache__',     // Python
+      '.pytest_cache',   // Pytest
+      'venv',            // Python venv
+      '.venv',           // Python venv
+      '.DS_Store',       // macOS
+      'Thumbs.db',       // Windows
+    ];
+
+    for (const dir of commonIgnoredDirs) {
+      if (absolutePath.includes(`/${dir}/`) || absolutePath.endsWith(`/${dir}`)) {
+        return;
+      }
+    }
+
+    // Check if file matches .gitignore patterns
+    if (isIgnoredByGit(absolutePath)) {
       return;
     }
 

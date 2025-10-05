@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { CaptureDaemon } from '../../src/lib/capture-daemon';
+import { CaptureDaemon } from 'gitify-prompt';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -357,15 +357,75 @@ function setupGitWatcher(context: vscode.ExtensionContext) {
  * Hook into Cursor's AI chat functionality
  */
 function hookIntoCursorChat(context: vscode.ExtensionContext) {
-  // This is where we would hook into Cursor's internal chat API
-  // Since Cursor's API is not publicly documented, we use a workaround:
+  // Check if we're running in Cursor (not regular VS Code)
+  const isCursor = vscode.env.appName.toLowerCase().includes('cursor');
 
-  // 1. Monitor clipboard for copied AI responses
-  // 2. Watch for specific file patterns that indicate AI interaction
-  // 3. Use VS Code's language model API if available
+  if (!isCursor) {
+    console.log('Not running in Cursor, skipping chat hook');
+    return;
+  }
 
-  // For now, we'll use the manual capture approach
-  // In a production version, you'd work with Cursor's team to get proper API access
+  // Cursor stores chat data in: ~/Library/Application Support/Cursor/User/globalStorage
+  // Look for chat-related files
+  const homeDir = process.env.HOME || process.env.USERPROFILE;
+  if (!homeDir) return;
+
+  let cursorDataPath: string;
+  if (process.platform === 'darwin') {
+    cursorDataPath = path.join(homeDir, 'Library', 'Application Support', 'Cursor');
+  } else if (process.platform === 'win32') {
+    cursorDataPath = path.join(process.env.APPDATA || '', 'Cursor');
+  } else {
+    cursorDataPath = path.join(homeDir, '.config', 'Cursor');
+  }
+
+  if (!fs.existsSync(cursorDataPath)) {
+    console.log('Cursor data directory not found:', cursorDataPath);
+    return;
+  }
+
+  // Watch for chat database changes
+  const chatPatterns = [
+    path.join(cursorDataPath, 'User', 'globalStorage', '**', '*.json'),
+    path.join(cursorDataPath, 'User', 'workspaceStorage', '**', '*.json'),
+  ];
+
+  // Monitor chat files for changes
+  chatPatterns.forEach(pattern => {
+    try {
+      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+
+      watcher.onDidChange(async (uri) => {
+        if (!isAutoCapturing || !currentSessionId) return;
+
+        // Try to parse and extract chat messages
+        try {
+          const content = fs.readFileSync(uri.fsPath, 'utf-8');
+          const data = JSON.parse(content);
+
+          // Look for chat-like structures (this is speculative without Cursor's docs)
+          if (data.messages || data.chat || data.conversation) {
+            const messages = data.messages || data.chat || data.conversation;
+            if (Array.isArray(messages)) {
+              messages.forEach((msg: any) => {
+                if (msg.role && msg.content) {
+                  daemon.addMessage(currentSessionId!, msg.role, msg.content);
+                }
+              });
+            }
+          }
+        } catch (err) {
+          // Not a chat file or invalid JSON
+        }
+      });
+
+      context.subscriptions.push(watcher);
+    } catch (err) {
+      // Pattern might not be valid
+    }
+  });
+
+  console.log('Cursor chat monitoring enabled');
 }
 
 /**

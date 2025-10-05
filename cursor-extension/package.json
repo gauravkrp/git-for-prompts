@@ -1,13 +1,29 @@
 {
-  "name": "cursor-prompts",
-  "displayName": "Cursor Prompts - Git for Prompts",
-  "description": "Automatically capture and version Cursor AI prompts",
+  "name": "gitify-prompt-vscode",
+  "displayName": "Gitify Prompt for VS Code & Cursor",
+  "description": "Automatically capture and version AI conversations from Claude Code and Cursor",
   "version": "0.1.0",
+  "publisher": "gauravkrp",
   "engines": {
     "vscode": "^1.80.0"
   },
   "categories": [
     "Other"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gauravkrp/git-for-prompts.git",
+    "directory": "cursor-extension"
+  },
+  "keywords": [
+    "cursor",
+    "claude",
+    "ai",
+    "prompts",
+    "git",
+    "version-control",
+    "chat",
+    "llm"
   ],
   "activationEvents": [
     "onStartupFinished"
@@ -98,6 +114,6 @@
     "@vscode/vsce": "^2.22.0"
   },
   "dependencies": {
-    "git-for-prompts": "file:.."
+    "gitify-prompt": "^0.1.0"
   }
 }

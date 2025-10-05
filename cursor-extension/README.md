@@ -1,14 +1,15 @@
-# Cursor Prompts Extension
+# Gitify Prompt for VS Code & Cursor
 
-Automatically capture and version Cursor AI prompts using Git for Prompts.
+Automatically capture and version AI conversations from Claude Code and Cursor IDE using [Gitify Prompt](https://www.npmjs.com/package/gitify-prompt).
 
 ## Features
 
-- **Automatic Capture**: Automatically captures Cursor AI chat sessions in the background
-- **Git Integration**: Links prompts to Git commits automatically
-- **Manual Save**: One-click manual save of prompts with context
+- **Automatic Capture**: Captures Cursor AI and Claude Code chat sessions in the background
+- **Git Integration**: Links conversations to Git commits automatically
+- **Manual Save**: One-click manual save of prompts with full context
 - **Session Viewer**: View active prompt sessions and conversation history
-- **Zero Configuration**: Works out of the box with Git for Prompts
+- **Works in Both**: Compatible with VS Code and Cursor IDE
+- **Zero Configuration**: Auto-detects environment and works out of the box
 
 ## Installation
 

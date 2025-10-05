@@ -91,16 +91,26 @@ test:
 ---
 
 ### 5. Web Dashboard
-**Status:** Not started
+**Status:** ✅ Static site generator **COMPLETED** (2025-10-05)
+**See:** NEXTJS-APP-ROADMAP.md for hosted SaaS version
 
-- [ ] Search prompts
-- [ ] View prompt history
+**Static Site (✅ Completed):**
+- ✅ `gitify-prompt web` - Generate HTML dashboard
+- ✅ `gitify-prompt web --open` - Open in browser
+- ✅ Search prompts (client-side)
+- ✅ Filter by branch/author (client-side)
+- ✅ View full conversations
+- ✅ Beautiful responsive UI (Tailwind-inspired CSS)
+- ✅ GitHub Pages ready
+
+**NextJS SaaS (🔜 Future - After 100+ users):**
+- [ ] Hosted dashboard with authentication
 - [ ] Side-by-side diff UI
 - [ ] Tag prompts
 - [ ] PR-style review interface
 - [ ] Team analytics
 
-**Tech stack:** Next.js + React + Tailwind?
+**Tech stack:** Static HTML/CSS/JS → NextJS + React + Tailwind (future)
 
 ---
 
@@ -154,14 +164,18 @@ test:
 ---
 
 ### 9. List/Show Commands
-**Status:** Partially implemented
+**Status:** ✅ **COMPLETED** (2025-10-05)
 
-- [ ] `gitify-prompt list` - List all captured prompts
-- [ ] `gitify-prompt list --branch <name>` - Filter by branch
-- [ ] `gitify-prompt list --author <name>` - Filter by author
-- [ ] `gitify-prompt show <sha>` - View conversation for commit
-- [ ] `gitify-prompt diff <sha1> <sha2>` - Compare prompts
-- [ ] `gitify-prompt history <file>` - View prompts that modified file
+- ✅ `gitify-prompt list` - List all captured prompts
+- ✅ `gitify-prompt list --branch <name>` - Filter by branch
+- ✅ `gitify-prompt list --author <name>` - Filter by author
+- ✅ `gitify-prompt list --since <date>` - Filter by date
+- ✅ `gitify-prompt list --limit <N>` - Limit results
+- ✅ `gitify-prompt show <sha>` - View conversation for commit
+- ✅ `gitify-prompt show <sha> --json` - JSON output
+- ✅ `gitify-prompt show <sha> --files` - Show file contents
+- [ ] `gitify-prompt diff <sha1> <sha2>` - Compare prompts (future)
+- [ ] `gitify-prompt history <file>` - View prompts that modified file (future)
 
 ---
 
@@ -341,11 +355,12 @@ curl -fsSL https://gitify-prompt.com/install.sh | sh
 ## Current Priority Order
 
 1. ~~**Branch awareness**~~ ✅ **COMPLETED** (2025-10-05)
-2. **End-to-end testing** (De-risk before publishing)
-3. **List/show commands** (Basic UX needed)
-4. **Publish to npm** (Get users!)
-5. **Testing infrastructure** (Core differentiator)
-6. **Web dashboard** (Team collaboration)
+2. ~~**CLI commands** (list, show)~~ ✅ **COMPLETED** (2025-10-05)
+3. ~~**Static web generator** (`gitify-prompt web`)~~ ✅ **COMPLETED** (2025-10-05)
+4. **End-to-end testing** (De-risk before publishing) - **NEXT**
+5. **Publish to npm** (Get users!)
+6. **Testing infrastructure** (Core differentiator)
+7. **NextJS SaaS app** (After 100+ users) - See NEXTJS-APP-ROADMAP.md
 
 ---
 

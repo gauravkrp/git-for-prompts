@@ -8,6 +8,8 @@ import { historyCommand } from '../commands/history.js';
 import { testCommand } from '../commands/test.js';
 import { initCommand } from '../commands/init.js';
 import { listCommand } from '../commands/list.js';
+import { showCommand } from '../commands/show.js';
+import { webCommand } from '../commands/web.js';
 
 const program = new Command();
 
@@ -54,10 +56,26 @@ program
 
 program
   .command('list')
-  .description('List all prompts in the repository')
-  .option('--tags <tags>', 'Filter by tags')
-  .option('--model <model>', 'Filter by model')
+  .description('List all captured prompts')
+  .option('--branch <branch>', 'Filter by branch')
+  .option('--author <author>', 'Filter by author')
+  .option('--since <date>', 'Show prompts since date (e.g., "2 days ago")')
+  .option('--limit <number>', 'Limit number of results')
   .action(listCommand);
+
+program
+  .command('show <sha>')
+  .description('Show details of a specific prompt')
+  .option('--json', 'Output as JSON')
+  .option('--files', 'Show file contents')
+  .action(showCommand);
+
+program
+  .command('web')
+  .description('Generate static HTML dashboard')
+  .option('--open', 'Open in browser after generation')
+  .option('--output <path>', 'Output directory (default: .prompts/web)')
+  .action(webCommand);
 
 program.parse(process.argv);
 

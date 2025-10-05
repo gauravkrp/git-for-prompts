@@ -16,6 +16,9 @@ Automatically captures your Claude Code conversations and links them to git comm
 - 🚀 **Real-Time Sync** - Sessions saved immediately, not on exit
 - 🔄 **Multi-Session Support** - Run multiple Claude instances, capture all of them
 - 🛠️ **Any Commit Tool** - Works with GitHub Desktop, VS Code, Terminal, or even Claude itself
+- 📊 **CLI Dashboard** - List, search, and filter prompts from terminal
+- 🌐 **Web Dashboard** - Beautiful static HTML dashboard with search and filters
+- 🌿 **Branch Tracking** - See which branch each conversation happened on
 
 ## Quick Start
 
@@ -247,10 +250,82 @@ gitify-prompt init
 - Safe to run multiple times
 
 ### `gitify-prompt list`
-List captured sessions (coming soon).
+List all captured prompts with metadata.
+
+```bash
+gitify-prompt list
+gitify-prompt list --branch feature-auth
+gitify-prompt list --author "Your Name"
+gitify-prompt list --since "2 days ago"
+gitify-prompt list --limit 10
+```
+
+**Output:**
+```
+┌──────────┬────────────────┬───────────────┬──────────┬────────┬──────────────────┐
+│ SHA      │ Branch         │ Author        │ Messages │ Files  │ Date             │
+├──────────┼────────────────┼───────────────┼──────────┼────────┼──────────────────┤
+│ abc123d  │ feature-auth   │ @Your Name    │ 3        │ 5      │ 2 hours ago      │
+│ def456g  │ main           │ @Your Name    │ 7        │ 2      │ 5 hours ago      │
+└──────────┴────────────────┴───────────────┴──────────┴────────┴──────────────────┘
+```
 
 ### `gitify-prompt show <sha>`
-View conversation for a specific commit (coming soon).
+View full conversation and changes for a specific commit.
+
+```bash
+gitify-prompt show abc123
+gitify-prompt show abc123 --json
+gitify-prompt show abc123 --files
+```
+
+**Output:**
+```
+Commit: abc123def456
+Branch: feature-auth ← main
+Author: Your Name <you@example.com>
+Date: Jan 15, 2025, 10:30:00 AM (2 hours ago)
+Messages: 3 • Files: 5
+
+💬 Conversation
+
+[10:30:00] 👤 You:
+  add error handling to src/api.ts
+
+[10:30:05] 🤖 Claude:
+  I'll add comprehensive error handling...
+
+📝 Files Modified (5)
+
+✏️  src/api.ts
+✏️  src/types.ts
+...
+```
+
+### `gitify-prompt web`
+Generate a static HTML dashboard to visualize your prompts.
+
+```bash
+gitify-prompt web
+gitify-prompt web --open  # Open in browser after generation
+```
+
+**Features:**
+- 🔍 Search prompts
+- 🔄 Filter by branch/author
+- 💬 View full conversations
+- 📱 Responsive design
+- 🌐 Works offline (no backend needed)
+- 📦 Commit to git for GitHub Pages
+
+**Output:**
+```
+.prompts/web/
+├── index.html        # Prompt list dashboard
+├── prompts/          # Individual prompt pages
+├── assets/           # CSS and JavaScript
+└── data.json         # All prompts as JSON
+```
 
 ## Configuration
 

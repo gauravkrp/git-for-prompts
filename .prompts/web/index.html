@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gitify Prompt Dashboard</title>
+  <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🎯 Gitify Prompt Dashboard</h1>
+      <p class="subtitle">Captured Claude Code conversations</p>
+    </header>
+
+    <div class="filters">
+      <input type="text" id="search" placeholder="Search prompts..." />
+      <select id="branchFilter">
+        <option value="">All branches</option>
+        <option value="feature/branch-tracking">feature/branch-tracking</option>
+      </select>
+      <select id="authorFilter">
+        <option value="">All authors</option>
+        <option value="Gaurav Pandey">@Gaurav Pandey</option>
+      </select>
+    </div>
+
+    <div id="promptList" class="prompt-list">
+      <div class="prompt-card" data-sha="abc123def456" data-branch="feature/branch-tracking" data-author="Gaurav Pandey">
+    <div class="card-header">
+      <div class="sha">abc123d</div>
+      <div class="date">10/5/2025, 3:30:00 PM</div>
+    </div>
+    <div class="card-body">
+      <div class="branch">feature/branch-tracking ← main</div>
+      <div class="author">@Gaurav Pandey</div>
+    </div>
+    <div class="card-footer">
+      <span class="badge">💬 4 messages</span>
+      <span class="badge">📝 3 files</span>
+      <a href="prompts/abc123def456.html" class="view-link">View →</a>
+    </div>
+  </div>
+    </div>
+  </div>
+
+  <script src="assets/app.js"></script>
+  <script>
+    const prompts = [{"sha":"abc123def456","branch":"feature/branch-tracking","parentBranch":"main","author":{"name":"Gaurav Pandey","email":"gaurav@getthera.com"},"messageCount":4,"fileCount":3,"timestamp":"2025-10-05T10:00:00.000Z","filePath":"/Users/gaurav/dev/git-prompts/.prompts/prompts/1733386000000-abc123def456.json"}];
+    initDashboard(prompts);
+  </script>
+</body>
+</html>

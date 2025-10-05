@@ -1,0 +1,82 @@
+# Source files (TypeScript source not needed in package)
+src/
+
+# Development files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Test files
+test/
+*.test.ts
+*.test.js
+
+# Documentation (keep README.md but exclude others)
+docs/
+CONTRIBUTING.md
+CLI-IMPLEMENTATION-PLAN.md
+WEB-DASHBOARD-DESIGN.md
+NEXTJS-APP-ROADMAP.md
+TODO.md
+VISION.md
+PUBLISH.md
+KNOWN-ISSUES.md
+QUICK-START.md
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# CI/CD
+.github/
+.travis.yml
+.circleci/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+
+# Environment files
+.env
+.env.*
+
+# Build cache
+.cache/
+coverage/
+.nyc_output/
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# TypeScript config (not needed by users)
+tsconfig.tsbuildinfo
+
+# Examples and test data
+.prompts/
+examples/
+
+# Extensions (not ready for distribution)
+cursor-extension/
+vscode-extension/
+
+# Claude config
+.claude/
+
+# Example files
+.promptrc.example.json
+
+# TypeScript config
+tsconfig.json
+
+# Keep these files in the package:
+# - dist/ (compiled JavaScript - REQUIRED)
+# - README.md (documentation)
+# - LICENSE (legal)
+# - package.json (metadata)

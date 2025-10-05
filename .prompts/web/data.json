@@ -1,0 +1,59 @@
+[
+  {
+    "id": "test-session-1",
+    "tool": "claude-code",
+    "startTime": "2025-10-05T10:00:00.000Z",
+    "author": {
+      "name": "Gaurav Pandey",
+      "email": "gaurav@getthera.com"
+    },
+    "messages": [
+      {
+        "role": "user",
+        "content": "Implement branch tracking in gitify-prompt",
+        "timestamp": "2025-10-05T10:00:00.000Z"
+      },
+      {
+        "role": "assistant",
+        "content": "I'll implement branch tracking for gitify-prompt. This will allow you to see which branch each prompt was created on.\n\nFirst, I'll add a getGitBranch() function to capture the current branch and parent branch.",
+        "timestamp": "2025-10-05T10:00:05.000Z"
+      },
+      {
+        "role": "user",
+        "content": "Also update the session format to include the branch metadata",
+        "timestamp": "2025-10-05T10:02:00.000Z"
+      },
+      {
+        "role": "assistant",
+        "content": "I'll update the saveSessionState() function to capture branch information and add it to the metadata.",
+        "timestamp": "2025-10-05T10:02:05.000Z"
+      }
+    ],
+    "filesModified": [
+      {
+        "file": "/Users/gaurav/dev/git-prompts/src/lib/claude-hook.ts",
+        "timestamp": "2025-10-05T10:01:00.000Z"
+      },
+      {
+        "file": "/Users/gaurav/dev/git-prompts/README.md",
+        "timestamp": "2025-10-05T10:03:00.000Z"
+      },
+      {
+        "file": "/Users/gaurav/dev/git-prompts/TODO.md",
+        "timestamp": "2025-10-05T10:03:30.000Z"
+      }
+    ],
+    "metadata": {
+      "cwd": "/Users/gaurav/dev/git-prompts",
+      "repoPath": "/Users/gaurav/dev/git-prompts",
+      "branch": "feature/branch-tracking",
+      "parentBranch": "main",
+      "platform": "darwin",
+      "nodeVersion": "v22.14.0",
+      "fileCount": 3,
+      "messageCount": 4,
+      "commitSha": "abc123def456",
+      "lastUpdate": "2025-10-05T10:04:00.000Z"
+    }
+  }
+]

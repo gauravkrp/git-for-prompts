@@ -149,6 +149,8 @@ Sessions are matched to conversations using:
   ],
   "metadata": {
     "commitSha": "abc123def",
+    "branch": "feature-auth",
+    "parentBranch": "main",
     "fileCount": 1,
     "messageCount": 2
   }

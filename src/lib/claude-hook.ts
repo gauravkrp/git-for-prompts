@@ -286,6 +286,50 @@ function getGitAuthor(): { name: string; email: string } | null {
 }
 
 /**
+ * Get current git branch information
+ */
+function getGitBranch(): { current: string; parent?: string } | null {
+  try {
+    const { execSync } = require('child_process');
+
+    // Get current branch name
+    const current = execSync('git rev-parse --abbrev-ref HEAD', { encoding: 'utf-8' }).trim();
+
+    // Try to detect parent branch by checking tracking branch
+    let parent: string | undefined;
+    try {
+      const trackingBranch = execSync(`git config branch.${current}.merge`, { encoding: 'utf-8' }).trim();
+      if (trackingBranch) {
+        // Extract branch name from refs/heads/...
+        parent = trackingBranch.replace('refs/heads/', '');
+      }
+    } catch {
+      // No tracking branch configured
+    }
+
+    // If no tracking branch, try to infer from common branches
+    if (!parent && current !== 'main' && current !== 'master') {
+      // Check if main or master exists
+      try {
+        execSync('git rev-parse --verify main', { encoding: 'utf-8', stdio: 'ignore' });
+        parent = 'main';
+      } catch {
+        try {
+          execSync('git rev-parse --verify master', { encoding: 'utf-8', stdio: 'ignore' });
+          parent = 'master';
+        } catch {
+          // No main or master
+        }
+      }
+    }
+
+    return { current, parent };
+  } catch (error) {
+    return null;
+  }
+}
+
+/**
  * Save current session state
  * Called both on file changes and on exit
  */
@@ -313,6 +357,9 @@ function saveSessionState() {
     // Get git author details
     const gitAuthor = getGitAuthor();
 
+    // Get git branch information
+    const gitBranch = getGitBranch();
+
     // Format session for storage
     const sessionData = {
       id: session.id,
@@ -326,6 +373,8 @@ function saveSessionState() {
       })),
       metadata: {
         ...session.metadata,
+        branch: gitBranch?.current,
+        parentBranch: gitBranch?.parent,
         fileCount: session.codeChanges.length,
         messageCount: conversationMessages.length,
         lastUpdate: new Date().toISOString()

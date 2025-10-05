@@ -14,6 +14,7 @@
 - Individual components tested manually
 - Conversation parsing verified with real JSONL files
 - Git author capture tested
+- Git branch tracking tested (current + parent branch detection)
 - Hook loading verified
 - File capture verified
 - Pasted content verified (1531 chars)

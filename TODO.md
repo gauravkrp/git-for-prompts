@@ -1,41 +1,36 @@
 # Implementation TODO
 
-## 🚨 Critical Issues
+## ✅ Recently Completed
 
-### 1. Branch Awareness - **MISSING**
-**Identified by:** User feedback (2025-10-05)
+### 1. Branch Awareness - **IMPLEMENTED** (2025-10-05)
+**Identified by:** User feedback
+**Implemented in:** commit on feature/branch-tracking
 
-**Problem:**
-- Prompts saved with commit SHA only
-- No branch metadata
-- No branch filtering
-- No awareness of merge commits
-- Can't view "prompts on feature-branch-x"
+**Solution:**
+- ✅ Added `branch` field to session metadata
+- ✅ Added `parentBranch` field (inferred from tracking branch or main/master)
+- ✅ Captures current branch: `git rev-parse --abbrev-ref HEAD`
+- ✅ Updated session format to include branch metadata
+- ✅ Tested on feature branch (feature/branch-tracking)
+- ⏳ TODO: Add `gitify-prompt list --branch <name>` filter (when list command implemented)
+- ⏳ TODO: Handle merge commits display
 
-**Impact:** High - Users working on feature branches can't track prompts per branch
-
-**Required Changes:**
-- [ ] Add `branch` field to session metadata
-- [ ] Capture current branch in pre-commit hook: `git rev-parse --abbrev-ref HEAD`
-- [ ] Update session format to include branch name
-- [ ] Add `gitify-prompt list --branch <name>` filter
-- [ ] Handle merge commits (show prompts from both branches?)
-- [ ] Update `gitify-prompt show <sha>` to display branch info
-
-**Example session format:**
+**Session format:**
 ```json
 {
   "metadata": {
     "commitSha": "abc123",
     "branch": "feature-authentication",
-    "parentBranch": "main"  // for feature branches
+    "parentBranch": "main"
   }
 }
 ```
 
 ---
 
-### 2. Dogfooding - Not Using Tool on Itself
+## 🚨 Critical Issues
+
+### 1. Dogfooding - Not Using Tool on Itself
 **Problem:** We're building gitify-prompt but not capturing our own conversations
 
 **Why:** Not using the wrapper (`claude` vs wrapper alias)
@@ -47,7 +42,7 @@
 
 ---
 
-### 3. End-to-End Testing - **NOT DONE**
+### 2. End-to-End Testing - **NOT DONE**
 **Status:** No complete flow tested yet
 
 **Missing:**
@@ -61,7 +56,7 @@
 
 ## High Priority Features
 
-### 4. Testing Infrastructure
+### 3. Testing Infrastructure
 **Status:** Not implemented
 
 - [ ] `gitify-prompt test <prompt-id>` command
@@ -83,7 +78,7 @@ test:
 
 ---
 
-### 5. Multi-Provider Support
+### 4. Multi-Provider Support
 **Status:** Not implemented
 
 - [ ] Provider adapter architecture
@@ -95,7 +90,7 @@ test:
 
 ---
 
-### 6. Web Dashboard
+### 5. Web Dashboard
 **Status:** Not started
 
 - [ ] Search prompts
@@ -111,7 +106,7 @@ test:
 
 ## Medium Priority
 
-### 7. Performance Optimization
+### 6. Performance Optimization
 **Issue:** `saveSessionState()` called on EVERY file write
 
 **Impact:**
@@ -128,7 +123,7 @@ test:
 
 ---
 
-### 8. Windows Support
+### 7. Windows Support
 **Status:** UNTESTED
 
 **Issues:**
@@ -144,7 +139,7 @@ test:
 
 ---
 
-### 9. Error Handling & Debugging
+### 8. Error Handling & Debugging
 **Issue:** Too many silent failures
 
 **Good:** Won't break Claude
@@ -158,7 +153,7 @@ test:
 
 ---
 
-### 10. List/Show Commands
+### 9. List/Show Commands
 **Status:** Partially implemented
 
 - [ ] `gitify-prompt list` - List all captured prompts
@@ -172,7 +167,7 @@ test:
 
 ## Low Priority / Future
 
-### 11. Cursor IDE Support
+### 10. Cursor IDE Support
 **Status:** Not started
 
 - [ ] Cursor conversation capture
@@ -181,7 +176,7 @@ test:
 
 ---
 
-### 12. ChatGPT Support
+### 11. ChatGPT Support
 **Status:** Not started
 
 - [ ] Browser extension for ChatGPT
@@ -190,7 +185,7 @@ test:
 
 ---
 
-### 13. Publishing
+### 12. Publishing
 **Status:** Not published
 
 - [ ] Verify package.json metadata
@@ -205,7 +200,7 @@ test:
 
 ---
 
-### 14. Documentation
+### 13. Documentation
 
 - [ ] Add architecture diagram (update with branching)
 - [ ] Add workflow examples (feature branches)
@@ -215,7 +210,7 @@ test:
 
 ---
 
-### 15. Prompt Format Portability
+### 14. Prompt Format Portability
 **Status:** Design phase
 
 **Goal:** Make prompts portable across tools
@@ -243,7 +238,7 @@ prompt:
 
 ---
 
-### 16. Security & Privacy
+### 15. Security & Privacy
 
 - [ ] Sensitive data masking (API keys, passwords)
 - [ ] `.promptignore` patterns
@@ -253,7 +248,7 @@ prompt:
 
 ---
 
-### 17. Installer Script
+### 16. Installer Script
 **Status:** Not started
 
 - [ ] One-command install script
@@ -269,7 +264,7 @@ curl -fsSL https://gitify-prompt.com/install.sh | sh
 
 ## Bugs to Fix
 
-### 18. Auto-Commit Infinite Loop Risk
+### 17. Auto-Commit Infinite Loop Risk
 **Status:** Mitigated with `--no-verify`
 
 **Verify:**
@@ -279,7 +274,7 @@ curl -fsSL https://gitify-prompt.com/install.sh | sh
 
 ---
 
-### 19. Pasted Content Edge Cases
+### 18. Pasted Content Edge Cases
 **Status:** Verified for 1531 chars, but...
 
 **Test:**
@@ -345,7 +340,7 @@ curl -fsSL https://gitify-prompt.com/install.sh | sh
 
 ## Current Priority Order
 
-1. **Branch awareness** (Critical gap identified)
+1. ~~**Branch awareness**~~ ✅ **COMPLETED** (2025-10-05)
 2. **End-to-end testing** (De-risk before publishing)
 3. **List/show commands** (Basic UX needed)
 4. **Publish to npm** (Get users!)

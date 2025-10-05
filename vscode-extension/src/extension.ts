@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import { CaptureDaemon } from 'gitify-prompt';
 import * as path from 'path';
 import * as fs from 'fs';
+import Database from 'better-sqlite3';
 
 /**
  * Cursor Prompts Extension
@@ -24,9 +25,16 @@ let daemon: CaptureDaemon;
 let currentSessionId: string | null = null;
 let statusBarItem: vscode.StatusBarItem;
 let isAutoCapturing = false;
+let outputChannel: vscode.OutputChannel;
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('Cursor Prompts extension is now active');
+  // Create output channel for debugging
+  outputChannel = vscode.window.createOutputChannel('Gitify Prompt');
+  context.subscriptions.push(outputChannel);
+
+  outputChannel.appendLine('Gitify Prompt extension is now active');
+  outputChannel.appendLine(`Running in: ${vscode.env.appName}`);
+  outputChannel.appendLine(`Workspace: ${vscode.workspace.workspaceFolders?.[0]?.uri.fsPath}`);
 
   // Initialize daemon
   daemon = new CaptureDaemon();
@@ -53,7 +61,7 @@ export function activate(context: vscode.ExtensionContext) {
       }
     } else {
       vscode.window.showInformationMessage(
-        'Git for Prompts not initialized. Run "prompt init" to start capturing prompts.',
+        'Gitify Prompt not initialized. Run "gitify-prompt init" to start capturing prompts.',
         'Initialize Now'
       ).then(selection => {
         if (selection === 'Initialize Now') {
@@ -100,17 +108,21 @@ export function activate(context: vscode.ExtensionContext) {
  */
 async function startAutoCapture() {
   if (isAutoCapturing) {
+    console.log('Auto-capture already running');
     return;
   }
 
   try {
+    console.log('Starting auto-capture...');
     await daemon.start();
+    console.log('Daemon started');
 
     // Create a new session
     currentSessionId = daemon.createSession('cursor', {
       workspace: vscode.workspace.workspaceFolders?.[0]?.uri.fsPath,
       vscodeVersion: vscode.version
     });
+    console.log('Session created:', currentSessionId);
 
     isAutoCapturing = true;
     statusBarItem.text = "$(circle-filled) Prompts: On";
@@ -120,8 +132,10 @@ async function startAutoCapture() {
     if (config.get('showNotifications', true)) {
       vscode.window.showInformationMessage('Prompt auto-capture started');
     }
-  } catch (error) {
-    vscode.window.showErrorMessage(`Failed to start prompt capture: ${error.message}`);
+    console.log('Auto-capture started successfully');
+  } catch (error: any) {
+    console.error('Failed to start auto-capture:', error);
+    vscode.window.showErrorMessage(`Failed to start prompt capture: ${error?.message || error}`);
   }
 }
 
@@ -355,86 +369,162 @@ function setupGitWatcher(context: vscode.ExtensionContext) {
 
 /**
  * Hook into Cursor's AI chat functionality
+ * Cursor stores chat history in SQLite databases (state.vscdb files)
+ * Location: ~/Library/Application Support/Cursor/User/workspaceStorage/<workspace-id>/state.vscdb
  */
 function hookIntoCursorChat(context: vscode.ExtensionContext) {
   // Check if we're running in Cursor (not regular VS Code)
   const isCursor = vscode.env.appName.toLowerCase().includes('cursor');
 
   if (!isCursor) {
-    console.log('Not running in Cursor, skipping chat hook');
+    outputChannel.appendLine('Not running in Cursor, skipping chat hook');
     return;
   }
 
-  // Cursor stores chat data in: ~/Library/Application Support/Cursor/User/globalStorage
-  // Look for chat-related files
+  // Find Cursor's workspace storage directory
   const homeDir = process.env.HOME || process.env.USERPROFILE;
   if (!homeDir) return;
 
-  let cursorDataPath: string;
+  let cursorWorkspaceStorage: string;
   if (process.platform === 'darwin') {
-    cursorDataPath = path.join(homeDir, 'Library', 'Application Support', 'Cursor');
+    cursorWorkspaceStorage = path.join(homeDir, 'Library', 'Application Support', 'Cursor', 'User', 'workspaceStorage');
   } else if (process.platform === 'win32') {
-    cursorDataPath = path.join(process.env.APPDATA || '', 'Cursor');
+    cursorWorkspaceStorage = path.join(process.env.APPDATA || '', 'Cursor', 'User', 'workspaceStorage');
   } else {
-    cursorDataPath = path.join(homeDir, '.config', 'Cursor');
+    cursorWorkspaceStorage = path.join(homeDir, '.config', 'Cursor', 'User', 'workspaceStorage');
   }
 
-  if (!fs.existsSync(cursorDataPath)) {
-    console.log('Cursor data directory not found:', cursorDataPath);
+  if (!fs.existsSync(cursorWorkspaceStorage)) {
+    outputChannel.appendLine(`Cursor workspace storage not found: ${cursorWorkspaceStorage}`);
     return;
   }
 
-  // Watch for chat database changes
-  const chatPatterns = [
-    path.join(cursorDataPath, 'User', 'globalStorage', '**', '*.json'),
-    path.join(cursorDataPath, 'User', 'workspaceStorage', '**', '*.json'),
-  ];
+  outputChannel.appendLine(`Monitoring Cursor chat database at: ${cursorWorkspaceStorage}`);
 
-  // Monitor chat files for changes
-  chatPatterns.forEach(pattern => {
-    try {
-      const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+  // Find all state.vscdb files and watch them
+  const workspaceDirs = fs.readdirSync(cursorWorkspaceStorage);
 
-      watcher.onDidChange(async (uri) => {
+  for (const workspaceId of workspaceDirs) {
+    const dbPath = path.join(cursorWorkspaceStorage, workspaceId, 'state.vscdb');
+
+    if (fs.existsSync(dbPath)) {
+      outputChannel.appendLine(`Found Cursor database: ${dbPath}`);
+
+      // Watch for changes to this database
+      const watcher = vscode.workspace.createFileSystemWatcher(dbPath);
+
+      watcher.onDidChange(async () => {
         if (!isAutoCapturing || !currentSessionId) return;
 
-        // Try to parse and extract chat messages
         try {
-          const content = fs.readFileSync(uri.fsPath, 'utf-8');
-          const data = JSON.parse(content);
+          // Read chat messages from SQLite database
+          const messages = readCursorChatFromDB(dbPath);
 
-          // Look for chat-like structures (this is speculative without Cursor's docs)
-          if (data.messages || data.chat || data.conversation) {
-            const messages = data.messages || data.chat || data.conversation;
-            if (Array.isArray(messages)) {
-              messages.forEach((msg: any) => {
-                if (msg.role && msg.content) {
-                  daemon.addMessage(currentSessionId!, msg.role, msg.content);
-                }
-              });
-            }
+          // Add messages to current session
+          messages.forEach(msg => {
+            const role = msg.role === 'user' ? 'user' : 'assistant';
+            daemon.addMessage(currentSessionId!, role, msg.content);
+          });
+
+          if (messages.length > 0) {
+            outputChannel.appendLine(`Captured ${messages.length} messages from Cursor chat`);
           }
-        } catch (err) {
-          // Not a chat file or invalid JSON
+        } catch (error: any) {
+          outputChannel.appendLine(`Error reading Cursor database: ${error.message}`);
         }
       });
 
       context.subscriptions.push(watcher);
-    } catch (err) {
-      // Pattern might not be valid
     }
-  });
+  }
 
-  console.log('Cursor chat monitoring enabled');
+  outputChannel.appendLine('Cursor chat monitoring enabled');
+}
+
+/**
+ * Read chat messages from Cursor's SQLite database
+ * Database schema is undocumented, so this uses common patterns
+ */
+function readCursorChatFromDB(dbPath: string): Array<{role: string, content: string, timestamp?: string}> {
+  const messages: Array<{role: string, content: string, timestamp?: string}> = [];
+
+  try {
+    const db = new Database(dbPath, { readonly: true, fileMustExist: true });
+
+    // Try to find tables that might contain chat data
+    const tables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all() as Array<{name: string}>;
+
+    outputChannel.appendLine(`Database tables: ${tables.map(t => t.name).join(', ')}`);
+
+    // Look for common chat-related table names
+    const chatTables = tables.filter(t =>
+      t.name.toLowerCase().includes('chat') ||
+      t.name.toLowerCase().includes('message') ||
+      t.name.toLowerCase().includes('conversation') ||
+      t.name.toLowerCase().includes('tab')
+    );
+
+    for (const table of chatTables) {
+      try {
+        // Try to read from this table
+        const rows = db.prepare(`SELECT * FROM ${table.name}`).all();
+
+        outputChannel.appendLine(`Table ${table.name} has ${rows.length} rows`);
+
+        // Try to extract messages from the rows
+        for (const rowData of rows) {
+          const row = rowData as any;
+          // Look for value field (Cursor might store JSON in a value column)
+          if (row.value) {
+            try {
+              const data = JSON.parse(row.value);
+
+              // Check if this looks like a chat message
+              if (data.messages && Array.isArray(data.messages)) {
+                data.messages.forEach((msg: any) => {
+                  if (msg.role && msg.content) {
+                    messages.push({
+                      role: msg.role,
+                      content: typeof msg.content === 'string' ? msg.content : JSON.stringify(msg.content),
+                      timestamp: msg.timestamp
+                    });
+                  }
+                });
+              }
+            } catch (parseError) {
+              // Not JSON or doesn't match expected structure
+            }
+          }
+
+          // Also check for direct role/content fields
+          if (row.role && row.content) {
+            messages.push({
+              role: row.role,
+              content: row.content,
+              timestamp: row.timestamp
+            });
+          }
+        }
+      } catch (tableError) {
+        // Skip tables we can't read
+      }
+    }
+
+    db.close();
+  } catch (error: any) {
+    outputChannel.appendLine(`Failed to read Cursor database: ${error.message}`);
+  }
+
+  return messages;
 }
 
 /**
  * Initialize prompt repository
  */
 async function initializePromptRepo() {
-  const terminal = vscode.window.createTerminal('Prompt Init');
+  const terminal = vscode.window.createTerminal('Gitify Prompt Init');
   terminal.show();
-  terminal.sendText('prompt init');
+  terminal.sendText('gitify-prompt init');
 }
 
 /**

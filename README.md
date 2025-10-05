@@ -234,6 +234,65 @@ your-project/
         └── post-commit
 ```
 
+## Capture Methods
+
+Gitify Prompt supports two ways to capture AI conversations:
+
+### Method 1: Claude Code Wrapper (Recommended)
+
+**How it works:**
+- Uses `claude-wrapper.sh` to wrap the `claude` command
+- Loads a hook module via `NODE_OPTIONS` that runs in the same process
+- Reads conversations from `~/.claude/projects/*.jsonl` files
+- Matches conversations based on timestamp + project path
+
+**Pros:**
+- ✅ **Most reliable** - Direct access to Claude Code's conversation storage
+- ✅ **Perfect matching** - Uses timestamp and path to find exact conversation
+- ✅ **Full fidelity** - Captures complete message history including pasted content
+- ✅ **Works today** - Uses documented Claude Code storage format
+
+**Setup:**
+```bash
+# Add alias to ~/.zshrc or ~/.bashrc
+alias claude="/path/to/node_modules/gitify-prompt/bin/claude-wrapper.sh"
+
+# Use normally
+claude "add error handling"
+```
+
+**Matching Logic:**
+1. Matches conversations with timestamps after session start (±1 minute buffer)
+2. Confirms project path matches current directory
+3. Picks conversation with most messages in timeframe
+4. See src/lib/claude-hook.ts:198-283
+
+### Method 2: VS Code/Cursor Extension (Experimental)
+
+**How it works:**
+- VS Code extension that monitors Cursor's workspace storage
+- Reads chat history from SQLite databases (`state.vscdb` files)
+- Watches for database changes and extracts messages
+
+**Location:** `~/Library/Application Support/Cursor/User/workspaceStorage/<workspace-id>/state.vscdb`
+
+**Pros:**
+- ✅ **No wrapper needed** - Works directly in Cursor IDE
+- ✅ **Native integration** - Status bar, commands, notifications
+
+**Cons:**
+- ⚠️ **Undocumented schema** - Cursor's database structure is not officially documented
+- ⚠️ **Duplicate risk** - Currently captures all messages, may duplicate old conversations
+- ⚠️ **No active chat detection** - Can't reliably identify which "tab" is active
+- ⚠️ **Work in progress** - Needs improvement for production use
+
+**Known Limitations:**
+- Background Agent chats are stored remotely (not captured)
+- Database schema exploration is speculative
+- No deduplication logic yet (see vscode-extension/src/extension.ts:447-517)
+
+**Recommendation:** Use Claude Code wrapper for production. Use Cursor extension for experimentation only.
+
 ## Commands
 
 ### `gitify-prompt init`

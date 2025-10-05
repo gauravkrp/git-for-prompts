@@ -9,7 +9,7 @@ This extension automatically captures AI conversations from VS Code (Claude Code
 1. **Download the extension:**
    ```bash
    # The extension is located at:
-   cursor-extension/gitify-prompt-vscode-0.1.0.vsix
+   vscode-extension/gitify-prompt-vscode-0.1.0.vsix
    ```
 
 2. **Install in VS Code or Cursor:**
@@ -27,10 +27,10 @@ This extension automatically captures AI conversations from VS Code (Claude Code
    **Or use CLI:**
    ```bash
    # VS Code
-   code --install-extension cursor-extension/gitify-prompt-vscode-0.1.0.vsix
+   code --install-extension vscode-extension/gitify-prompt-vscode-0.1.0.vsix
 
    # Cursor
-   cursor --install-extension cursor-extension/gitify-prompt-vscode-0.1.0.vsix
+   cursor --install-extension vscode-extension/gitify-prompt-vscode-0.1.0.vsix
    ```
 
 3. **Reload VS Code/Cursor**
@@ -38,7 +38,7 @@ This extension automatically captures AI conversations from VS Code (Claude Code
 ### Option 2: Build from Source
 
 ```bash
-cd cursor-extension
+cd vscode-extension
 npm install
 npm run compile
 npm run package
@@ -227,7 +227,7 @@ Want to contribute?
 
 ```bash
 git clone https://github.com/gauravkrp/git-for-prompts.git
-cd git-for-prompts/cursor-extension
+cd git-for-prompts/vscode-extension
 npm install
 npm run watch  # Start watching for changes
 # Press F5 in VS Code to launch extension in debug mode

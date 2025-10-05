@@ -1,49 +1,119 @@
 {
-  "name": "git-prompts",
-  "displayName": "Git for Prompts",
-  "description": "Version control for LLM prompts",
+  "name": "gitify-prompt-vscode",
+  "displayName": "Gitify Prompt for VS Code & Cursor",
+  "description": "Automatically capture and version AI conversations from Claude Code and Cursor",
   "version": "0.1.0",
+  "publisher": "gauravkrp",
   "engines": {
-    "vscode": "^1.74.0"
+    "vscode": "^1.80.0"
   },
-  "categories": ["Other"],
-  "activationEvents": [
-    "onCommand:git-prompts.savePrompt",
-    "onCommand:git-prompts.viewHistory",
-    "onCommand:git-prompts.runTest"
+  "categories": [
+    "Other"
   ],
-  "main": "./extension.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gauravkrp/git-for-prompts.git",
+    "directory": "vscode-extension"
+  },
+  "keywords": [
+    "cursor",
+    "claude",
+    "ai",
+    "prompts",
+    "git",
+    "version-control",
+    "chat",
+    "llm"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "git-prompts.savePrompt",
-        "title": "Save Prompt to Repository"
+        "command": "cursor-prompts.savePrompt",
+        "title": "Save Prompt to Repository",
+        "category": "Cursor Prompts"
       },
       {
-        "command": "git-prompts.viewHistory",
-        "title": "View Prompt History"
+        "command": "cursor-prompts.viewHistory",
+        "title": "View Prompt History",
+        "category": "Cursor Prompts"
       },
       {
-        "command": "git-prompts.runTest",
-        "title": "Test Current Prompt"
+        "command": "cursor-prompts.toggleAutoCapture",
+        "title": "Toggle Auto-Capture",
+        "category": "Cursor Prompts"
+      },
+      {
+        "command": "cursor-prompts.showActiveSessions",
+        "title": "Show Active Prompt Sessions",
+        "category": "Cursor Prompts"
       }
     ],
     "menus": {
       "editor/context": [
         {
-          "command": "git-prompts.savePrompt",
-          "group": "git-prompts",
+          "command": "cursor-prompts.savePrompt",
+          "group": "cursor-prompts",
           "when": "editorTextFocus"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "cursor-prompts.savePrompt"
+        },
+        {
+          "command": "cursor-prompts.viewHistory"
+        },
+        {
+          "command": "cursor-prompts.toggleAutoCapture"
+        },
+        {
+          "command": "cursor-prompts.showActiveSessions"
         }
       ]
     },
-    "keybindings": [
-      {
-        "command": "git-prompts.savePrompt",
-        "key": "ctrl+shift+p ctrl+s",
-        "mac": "cmd+shift+p cmd+s",
-        "when": "editorTextFocus"
+    "configuration": {
+      "title": "Cursor Prompts",
+      "properties": {
+        "cursor-prompts.autoCapture": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically capture Cursor AI prompts"
+        },
+        "cursor-prompts.captureCodeChanges": {
+          "type": "boolean",
+          "default": true,
+          "description": "Capture code changes along with prompts"
+        },
+        "cursor-prompts.linkToGitCommits": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically link prompts to Git commits"
+        },
+        "cursor-prompts.showNotifications": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show notifications when prompts are captured"
+        }
       }
-    ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "package": "vsce package"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "@types/vscode": "^1.80.0",
+    "typescript": "^5.3.3",
+    "@vscode/vsce": "^2.22.0"
+  },
+  "dependencies": {
+    "gitify-prompt": "^0.1.0"
   }
 }

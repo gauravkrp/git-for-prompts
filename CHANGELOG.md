@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.1] - 2025-10-05
+
+### Fixed
+- **Gitignore Support** - Tool now respects `.gitignore` patterns and skips ignored files
+- **Build Directory Filtering** - Added automatic filtering for common build/cache directories:
+  - `.next` (Next.js), `.nuxt` (Nuxt.js), `.svelte-kit` (SvelteKit)
+  - `.vercel`, `.netlify` (Deploy platforms)
+  - `coverage`, `.cache`, `.turbo` (Build tools)
+  - `__pycache__`, `venv`, `.venv` (Python)
+  - `.DS_Store`, `Thumbs.db` (OS files)
+- **Git Check-Ignore Integration** - Uses `git check-ignore` to check custom ignore patterns
+- **Reduced Noise** - Only meaningful source code changes are captured now
+
+### Changed
+- File capture logic now checks `.gitignore` before capturing changes
+- Added performance optimization: common directories checked first, then git patterns
+
 ## [0.1.0] - 2025-10-05
 
 ### Added
@@ -89,5 +106,6 @@ See [TODO.md](./TODO.md) for planned features:
 
 ---
 
-[Unreleased]: https://github.com/gauravkrp/git-for-prompts/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/gauravkrp/git-for-prompts/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/gauravkrp/git-for-prompts/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/gauravkrp/git-for-prompts/releases/tag/v0.1.0

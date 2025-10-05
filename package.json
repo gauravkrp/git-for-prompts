@@ -1,6 +1,6 @@
 {
   "name": "gitify-prompt",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Automatically capture Claude Code conversations and link them to git commits",
   "main": "dist/index.js",
   "type": "module",

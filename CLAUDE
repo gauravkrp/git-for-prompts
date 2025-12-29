@@ -1,0 +1,49 @@
+✅ Extension updated with SQLite support for Cursor!
+
+  What Changed:
+
+  1. SQLite Database Integration
+
+  - Added better-sqlite3 to read Cursor's state.vscdb files
+  - Reads from: ~/Library/Application Support/Cursor/User/workspaceStorage/<workspace-id>/state.vscdb
+  - Dynamically explores database schema (table discovery)
+  - Logs table names and row counts for debugging
+
+  2. Improved Extension Code (vscode-extension/src/extension.ts)
+
+  - Added Output channel for debugging: View → Output → "Gitify Prompt"
+  - Rewrote hookIntoCursorChat() to watch SQLite databases
+  - Added readCursorChatFromDB() function for message extraction
+  - Fixed command references (prompt → gitify-prompt)
+
+  3. Documentation (README.md)
+
+  Added "Capture Methods" section comparing:
+
+  Method 1: Claude Code Wrapper (Recommended)
+  - ✅ Most reliable - direct access to ~/.claude/projects/*.jsonl
+  - ✅ Perfect matching - timestamp + path
+  - ✅ Full fidelity - captures pasted content
+
+  Method 2: Cursor Extension (Experimental)
+  - ⚠️ Undocumented schema
+  - ⚠️ No deduplication yet
+  - ⚠️ Can't identify active chat tab
+  - ⚠️ Background Agent chats stored remotely
+
+  ---
+  Testing the Extension:
+
+  1. Install in Cursor:
+  # File: /Users/gaurav/dev/git-prompts/vscode-extension/gitify-prompt-vscode-0.1.0.vsix
+  2. Check Output:
+    - View → Output → "Gitify Prompt"
+    - Should show: Database tables, workspace paths, etc.
+  3. Known Behavior:
+    - Currently captures ALL messages from database (not just new ones)
+    - May duplicate old conversations
+    - Needs improvement for production
+
+  Recommendation:
+
+  Continue using the claude wrapper for this project - it's proven and reliable. The Cursor extension is interesting for exploration but not production-ready yet.
